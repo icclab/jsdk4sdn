@@ -5,9 +5,11 @@
  */
 package sdk4sdn;
 
+import com.google.gson.Gson;
 import org.zeromq.ZMQ;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sdk4sdn.openflow13.*;
 /**
  *
  * @author aepp
@@ -53,4 +55,28 @@ public class Network {
 			log.error(e.getMessage(), e);
 		}
 	}
+	
+	public void Connect(){
+		this.RunSubscriber();
+	}
+	
+	private void RunSubscriber(){
+		//  Subscribe to zipcode, default is NYC, 10001
+		this.Subscriber.connect("ipc:///tmp/controller.ipc");
+		this.Subscriber.subscribe("controller".getBytes());
+		log.info("Connecting to: ipc:///tmp/"+this.SubDescriptor+".ipc");
+		
+		while (!Thread.currentThread ().isInterrupted ()) {
+			String topic = this.Subscriber.recvStr();
+			log.info("Received OFP msg: "+ topic);
+			String msg = this.Subscriber.recvStr();
+			log.info("Received OFP msg: "+ msg);
+			
+			Gson gson = new Gson();
+			OpenFlow OFPMessage = gson.fromJson(msg, OpenFlow.class);
+			String debug = "1";
+		}
+	}
+		
+
 }

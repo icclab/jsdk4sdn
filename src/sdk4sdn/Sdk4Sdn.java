@@ -19,10 +19,14 @@ public class Sdk4Sdn {
 	 * @param args the command line arguments
 	 */
 	public static void main(String[] args) {
+		
+		Network RyuConnection = new Network("skd4sdn", "controller");
 		// TODO code application logic here
 		PluginManager pluginManager = new DefaultPluginManager();
 		pluginManager.loadPlugins();
 		pluginManager.startPlugins();
+		RyuConnection.CreateSubscriber();
+		RyuConnection.Connect();
 	}
 	
 }
