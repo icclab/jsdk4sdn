@@ -3,7 +3,7 @@ package sdk4sdn.openflow13;
 
 import java.util.List;
 
-public class Oxm_fields{
+public class oxm_fields{
    	private OXMTlv OXMTlv;
 
  	public OXMTlv getOXMTlv(){

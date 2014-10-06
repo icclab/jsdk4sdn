@@ -6,9 +6,12 @@
 package sdk4sdn;
 
 import com.google.gson.Gson;
+import java.nio.charset.Charset;
+import java.util.List;
 import org.zeromq.ZMQ;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ro.fortsoft.pf4j.PluginManager;
 import sdk4sdn.openflow13.*;
 /**
  *
@@ -28,9 +31,12 @@ public class Network {
 	
 	String SubDescriptor;
 	
+	PluginManager pluginManager;
+	
 	private static final Logger log = LoggerFactory.getLogger(Network.class);
 	
-	public Network(String Publisher, String Subscriber){
+	public Network(String Publisher, String Subscriber, PluginManager pluginManager){
+		this.pluginManager = pluginManager;
 		this.PubDescriptor = Publisher;
 		this.SubDescriptor = Subscriber;
 	}
@@ -67,14 +73,20 @@ public class Network {
 		log.info("Connecting to: ipc:///tmp/"+this.SubDescriptor+".ipc");
 		
 		while (!Thread.currentThread ().isInterrupted ()) {
-			String topic = this.Subscriber.recvStr();
-			log.info("Received OFP msg: "+ topic);
-			String msg = this.Subscriber.recvStr();
-			log.info("Received OFP msg: "+ msg);
+			//FIXME: Do something usefull with the topic
+			String topic = this.Subscriber.recvStr(Charset.defaultCharset());
+			String msg = this.Subscriber.recvStr(Charset.defaultCharset());
 			
 			Gson gson = new Gson();
 			OpenFlow OFPMessage = gson.fromJson(msg, OpenFlow.class);
-			String debug = "1";
+			
+			//Execute all packet in listners 
+			//FIXME: move this code somewhere 
+			//else and only do this, if it is a packet_in
+			List<OFPEventPacketIn> OFPEventPacketIns = pluginManager.getExtensions(OFPEventPacketIn.class);
+			for (OFPEventPacketIn PacketIn : OFPEventPacketIns) {
+				PacketIn.packetIn(OFPMessage);
+			}
 		}
 	}
 		

@@ -5,7 +5,7 @@ import java.util.List;
 
 public class OXMTlv{
    	private String field;
-   	private Number value;
+   	private String value;
 
  	public String getField(){
 		return this.field;
@@ -13,10 +13,10 @@ public class OXMTlv{
 	public void setField(String field){
 		this.field = field;
 	}
- 	public Number getValue(){
+ 	public String getValue(){
 		return this.value;
 	}
-	public void setValue(Number value){
+	public void setValue(String value){
 		this.value = value;
 	}
 }
