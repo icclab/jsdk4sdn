@@ -48,7 +48,7 @@ public class Sdk4Sdn {
 	 */
 	public static void main(String[] args) {
 		//The Plugin path, FIXME: I think this is not needed
-		System.setProperty("pf4j.pluginsDir", "/home/staff/aepp/unix/NetBeansProjects/jsdk4sdn/src/app");
+		//System.setProperty("pf4j.pluginsDir", "/home/staff/aepp/unix/NetBeansProjects/jsdk4sdn/src/app");
 		
 		// Load and start the user SDN applications
 		PluginManager pluginManager = new DefaultPluginManager();
