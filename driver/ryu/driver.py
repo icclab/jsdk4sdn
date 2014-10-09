@@ -132,7 +132,26 @@ class Driver(app_manager.RyuApp):
         self.logger.info("sdk4sdn handler died")
         
     def _send_flow_mod(self, obj):
-        print "true"
+        flow_mod = obj.get("OFPFlowMod")
+        datapath = self.dpstore.get(flow_mod.get("datapath_id"))
+        datapath = datapath.get("dp_obj")
+        instructions = flow_mod.get("instructions")
+        
+        # FIXME: put this in a instruction parser
+        for instruction in instructions:
+            if "OFPInstructionActions" in instruction:
+                actions = self._parse_action(instruction.get("OFPInstructionActions").get("actions"))
+        
+        match = flow_mod.get("match")
+        match = self._pars_match(match)
+        
+        inst = [ofproto_v1_3_parser.OFPInstructionActions(ofproto_v1_3.OFPIT_APPLY_ACTIONS,
+                                            actions)]
+
+        mod = ofproto_v1_3_parser.OFPFlowMod(datapath=datapath, priority=int(flow_mod.get("priority")),
+                                match=match, instructions=inst)
+
+        datapath.send_msg(mod)
         
     def _send_packet_out(self, obj):
         packet_out = obj.get("OFPPacketOut")
@@ -157,6 +176,17 @@ class Driver(app_manager.RyuApp):
                 out_port = action.get("OFPActionOutput").get("out_port")
                 if out_port == "FLOOD":
                     out_port = ofproto_v1_3.OFPP_FLOOD
-                ret = [ofproto_v1_3_parser.OFPActionOutput(out_port)]
+                ret = [ofproto_v1_3_parser.OFPActionOutput(int(out_port))]
 
+        return ret
+    
+    def _pars_match(self, matches):
+        ret = False
+        fields = matches.get("OFPMatch").get("oxm_fields")
+        for field in fields:
+            if "OXMTlv" in field:
+                field_name = field.get("OXMTlv").get("field")
+                field_value = field.get("OXMTlv").get("value")
+                ret = eval("ofproto_v1_3_parser.OFPMatch("+field_name+"="+"\""+field_value+"\""+")")
+        
         return ret
