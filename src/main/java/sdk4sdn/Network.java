@@ -121,7 +121,6 @@ public class Network implements OFPSendFlowMod{
 	}
 	
 	public void send(OpenFlow OFPMessage) {
-		System.out.println("Publishing Data");
 		Gson gson = new Gson();
 		String response = gson.toJson(OFPMessage);
 		this.Publisher.sendMore("sdk4sdn");

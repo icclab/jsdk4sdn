@@ -59,7 +59,7 @@ public class L2Switch implements OFPEventPacketIn {
 		String eth_src = "";
 		String eth_dst = "";
 		String in_port = "";
-		String out_port = "";
+		String out_port;
 		
 		for ( oxm_fields field : OFPMessage.getOFPPacketIn().getMatch().getOFPMatch().getOxm_fields()) {
 			if("eth_src".equals(field.getOXMTlv().getField())) {
