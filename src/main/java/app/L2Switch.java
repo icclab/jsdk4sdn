@@ -50,7 +50,6 @@ public class L2Switch implements OFPEventPacketIn {
 	HashMap<String, String> ethDstMap = new HashMap<>();
 	
 	public L2Switch(){
-		System.out.println("New instance created");
 		//FIXME: Currently unused, maybe initialize the map or remove
 	}
 
@@ -78,7 +77,6 @@ public class L2Switch implements OFPEventPacketIn {
 		if(ethDstMap.get(eth_dst) != null) {
 			//We know the out port
 			out_port = ethDstMap.get(eth_dst);
-			System.out.println("The out port is: "+out_port);
 		}
 		else {
 			//We do not know the out port
