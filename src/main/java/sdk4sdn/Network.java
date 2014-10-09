@@ -61,12 +61,11 @@ public class Network implements OFPSendFlowMod{
 	
 	String SubDescriptor;
 	
-	PluginManager pluginManager;
+	List<OFPEventPacketIn> OFPEventPacketIns;
 	
 	private static final Logger log = LoggerFactory.getLogger(Network.class);
 	
-	public Network(String Publisher, String Subscriber, PluginManager pluginManager){
-		this.pluginManager = pluginManager;
+	public Network(String Publisher, String Subscriber){
 		this.PubDescriptor = Publisher;
 		this.SubDescriptor = Subscriber;
 	}
@@ -115,9 +114,8 @@ public class Network implements OFPSendFlowMod{
 			//Execute all packet in listners 
 			//FIXME: move this code somewhere 
 			//else and only do this, if it is a packet_in
-			List<OFPEventPacketIn> OFPEventPacketIns = pluginManager.getExtensions(OFPEventPacketIn.class);
-			for (OFPEventPacketIn PacketIn : OFPEventPacketIns) {
-				PacketIn.packetIn(OFPMessage, this);
+			for (OFPEventPacketIn packetIn : this.OFPEventPacketIns) {
+				packetIn.packetIn(OFPMessage, this);
 			}
 		}
 	}
@@ -126,10 +124,11 @@ public class Network implements OFPSendFlowMod{
 		System.out.println("Publishing Data");
 		Gson gson = new Gson();
 		String response = gson.toJson(OFPMessage);
-		System.out.println("Gonna send this: "+response);
 		this.Publisher.sendMore("sdk4sdn");
 		this.Publisher.send(response);
 	}
-		
-
+	
+	public void SetPacketInSubscribers(List<OFPEventPacketIn> OFPEventPacketIns){
+		this.OFPEventPacketIns = OFPEventPacketIns;
+	}
 }

@@ -47,9 +47,10 @@ import sdk4sdn.openflow13.*;
 @Extension
 public class L2Switch implements OFPEventPacketIn {
 	
-	HashMap<String, String> map = new HashMap<String, String>();
+	HashMap<String, String> ethDstMap = new HashMap<>();
 	
 	public L2Switch(){
+		System.out.println("New instance created");
 		//FIXME: Currently unused, maybe initialize the map or remove
 	}
 
@@ -72,11 +73,12 @@ public class L2Switch implements OFPEventPacketIn {
 				in_port = field.getOXMTlv().getValue();
 			}
 		}
-		map.put(eth_src, in_port);
+		ethDstMap.put(eth_src, in_port);
 		
-		if(map.get(eth_dst) != null) {
+		if(ethDstMap.get(eth_dst) != null) {
 			//We know the out port
-			out_port = map.get(eth_dst);
+			out_port = ethDstMap.get(eth_dst);
+			System.out.println("The out port is: "+out_port);
 		}
 		else {
 			//We do not know the out port
@@ -85,7 +87,7 @@ public class L2Switch implements OFPEventPacketIn {
 		
 		OpenFlow message = new OpenFlow();
 		
-		if(true) {
+		if("FLOOD".equals(out_port)) {
 			OFPPacketOut packetOut = new OFPPacketOut();
 			actions output = new actions();
 			OFPActionOutput OFPOutput = new OFPActionOutput();

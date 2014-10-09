@@ -60,12 +60,17 @@ public class Sdk4Sdn {
 		List<OFPEventPacketIn> events = pluginManager.getExtensions(OFPEventPacketIn.class);
         System.out.println(String.format("Found %d subscription for OFPEventPacketIn point '%s'", events.size(), OFPEventPacketIn.class.getName()));
 		
+		//Get all Extensions for a Extension Point
+		//FIXME: Move this code in a OFPExtensionLoader
+		List<OFPEventPacketIn> OFPEventPacketIns = pluginManager.getExtensions(OFPEventPacketIn.class);
+		
 		// Create a brand new controller<->sdk4sdn connection
 		// Start the subscriber and connect
-		Network RyuConnection = new Network("sdk4sdn", "controller", pluginManager);
-		RyuConnection.CreateSubscriber();
-		RyuConnection.CreatePublisher();
-		RyuConnection.Connect();
+		Network ControllerConnection = new Network("sdk4sdn", "controller");
+		ControllerConnection.SetPacketInSubscribers(OFPEventPacketIns);
+		ControllerConnection.CreateSubscriber();
+		ControllerConnection.CreatePublisher();
+		ControllerConnection.Connect();
 	}
 	
 }
