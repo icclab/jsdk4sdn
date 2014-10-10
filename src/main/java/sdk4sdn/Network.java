@@ -63,6 +63,8 @@ public class Network {
 	
 	List<OFPEventPacketIn> OFPEventPacketIns;
 	
+	List<OFPEventSwitchFeatures> OFPEventSwitchFeaturesList;
+	
 	private static final Logger log = LoggerFactory.getLogger(Network.class);
 	
 	public Network(String Publisher, String Subscriber){
@@ -111,11 +113,24 @@ public class Network {
 			Gson gson = new Gson();
 			OpenFlow OFPMessage = gson.fromJson(msg, OpenFlow.class);
 			
-			//Execute all packet in listners 
-			//FIXME: move this code somewhere 
-			//else and only do this, if it is a packet_in
-			for (OFPEventPacketIn packetIn : this.OFPEventPacketIns) {
-				packetIn.packetIn(OFPMessage, this);
+			//FIXME: Put this code somewhere else
+			//Here we check for a packet_in and execute all packet_in
+			//extensions
+			if(OFPMessage.getOFPPacketIn() != null) {
+				for (OFPEventPacketIn packetIn : this.OFPEventPacketIns) {
+					packetIn.packetIn(OFPMessage, this);
+				}
+			}
+			//Here we check for a switch_feature and execute all switch_feature
+			//extensions
+			else if(OFPMessage.getOFPSwitchFeatures() != null) {
+				for (OFPEventSwitchFeatures switchFeature : this.OFPEventSwitchFeaturesList) {
+					switchFeature.switchFeatures(OFPMessage, this);
+				}
+			}
+			//Didn't found an event
+			else {
+				log.info("Event not implemented");
 			}
 		}
 	}
@@ -129,5 +144,9 @@ public class Network {
 	
 	public void SetPacketInSubscribers(List<OFPEventPacketIn> OFPEventPacketIns){
 		this.OFPEventPacketIns = OFPEventPacketIns;
+	}
+	
+	public void SetSwitchFeaturesSubscribers(List<OFPEventSwitchFeatures> OFPEventSwitchFeatures){
+		this.OFPEventSwitchFeaturesList = OFPEventSwitchFeatures;
 	}
 }
