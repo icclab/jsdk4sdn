@@ -44,7 +44,7 @@ import sdk4sdn.openflow13.*;
  * @author aepp
  */
 @Extension
-public class L2Switch implements OFPEventPacketIn {
+public class L2Switch implements OFPEventPacketIn, OFPEventSwitchFeatures {
 	
 	HashMap<String, String> ethDstMap = new HashMap<>();
 	
@@ -123,5 +123,11 @@ public class L2Switch implements OFPEventPacketIn {
 		}
 
 		
+	}
+
+	@Override
+	public void switchFeatures(OpenFlow OFPMessage, Network network) {
+		//Just to show how it works if your app listns to multiple events
+		System.out.println("Found a new device with ID: " + OFPMessage.getOFPSwitchFeatures().getDatapath_id());
 	}
 }
