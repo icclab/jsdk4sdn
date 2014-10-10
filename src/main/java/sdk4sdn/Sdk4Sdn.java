@@ -37,6 +37,7 @@ import sdk4sdn.openflow13.OFPEventPacketIn;
 import java.util.List;
 import ro.fortsoft.pf4j.DefaultPluginManager;
 import ro.fortsoft.pf4j.PluginManager;
+import sdk4sdn.openflow13.OFPEventSwitchFeatures;
 /**
  *
  * @author aepp
@@ -63,11 +64,13 @@ public class Sdk4Sdn {
 		//Get all Extensions for a Extension Point
 		//FIXME: Move this code in a OFPExtensionLoader
 		List<OFPEventPacketIn> OFPEventPacketIns = pluginManager.getExtensions(OFPEventPacketIn.class);
+		List<OFPEventSwitchFeatures> OFPEventSwitchFeaturesList = pluginManager.getExtensions(OFPEventSwitchFeatures.class);
 		
 		// Create a brand new controller<->sdk4sdn connection
 		// Start the subscriber and connect
 		Network ControllerConnection = new Network("sdk4sdn", "controller");
 		ControllerConnection.SetPacketInSubscribers(OFPEventPacketIns);
+		ControllerConnection.SetSwitchFeaturesSubscribers(OFPEventSwitchFeaturesList);
 		ControllerConnection.CreateSubscriber();
 		ControllerConnection.CreatePublisher();
 		ControllerConnection.Connect();
