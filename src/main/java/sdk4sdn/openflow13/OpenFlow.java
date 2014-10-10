@@ -39,6 +39,7 @@ public class OpenFlow{
    	private OFPPacketIn OFPPacketIn;
 	private OFPFlowMod OFPFlowMod;
 	private OFPPacketOut OFPPacketOut;
+	private OFPSwitchFeatures OFPSwitchFeatures;
 
  	public OFPPacketIn getOFPPacketIn(){
 		return this.OFPPacketIn;
@@ -57,5 +58,11 @@ public class OpenFlow{
 	}
 	public void setOFPPacketOut(OFPPacketOut OFPPacketOut){
 		this.OFPPacketOut = OFPPacketOut;
+	}
+	public OFPSwitchFeatures getOFPSwitchFeatures(){
+		return this.OFPSwitchFeatures;
+	}
+	public void setOFPSwitchFeatures(OFPSwitchFeatures OFPSwitchFeatures){
+		this.OFPSwitchFeatures = OFPSwitchFeatures;
 	}
 }
