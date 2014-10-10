@@ -69,6 +69,7 @@ public class Sdk4Sdn {
 		// Create a brand new controller<->sdk4sdn connection
 		// Start the subscriber and connect
 		//FIXME: Do something here, this gonna be big
+		//FIXME: Make the endpoints "sdk4sdn" and "controller" as variable
 		Network ControllerConnection = new Network("sdk4sdn", "controller");
 		ControllerConnection.SetPacketInSubscribers(OFPEventPacketIns);
 		ControllerConnection.SetSwitchFeaturesSubscribers(OFPEventSwitchFeaturesList);
