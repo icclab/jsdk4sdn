@@ -36,7 +36,6 @@ package app;
 import java.util.HashMap;
 import ro.fortsoft.pf4j.Extension;
 import sdk4sdn.Network;
-import sdk4sdn.openflow13.OFPEventPacketIn;
 import sdk4sdn.openflow13.*;
 
 /**
