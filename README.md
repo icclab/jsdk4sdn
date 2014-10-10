@@ -7,6 +7,8 @@ a working SDN controller like RYU, OpenDaylight or trema.
 Building and Installing SDK4SDN
 -------------------------------
 
+Note: For the latest and greates version of the SDK4SDN, clone the master branch of this repository. For the relases, please ses the [releases page here](https://github.com/icclab/jsdk4sdn/releases).
+
 To build the SDK4SDN from source, you need ZMQ. The SDK4SDN itself is build 
 with maven. The following instructions were executed on a freshly installed 
 ubuntu 14.04 server. Prepare the system by installing the packages:
@@ -35,7 +37,7 @@ make
 make install
 ```
 
-Now install the SDK4SDN as follows
+Now install the SDK4SDN as follows.
 
 ```bash
 cd /usr/local/src/
@@ -43,6 +45,8 @@ git clone gitor@dornbirn.zhaw.ch:software-defined-networking/jsdk4sdn.git
 cd jsdk4sdn/
 mvn clean install
 ```
+
+Please see also the relases page for current SDK4SDN releases [here](https://github.com/icclab/jsdk4sdn/releases).
 
 Run the SDK4SDN
 
