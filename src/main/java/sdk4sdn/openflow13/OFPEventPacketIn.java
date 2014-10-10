@@ -34,7 +34,6 @@
 package sdk4sdn.openflow13;
 import ro.fortsoft.pf4j.ExtensionPoint;
 import sdk4sdn.Network;
-import sdk4sdn.openflow13.OpenFlow;
 
 //FIXME: Create a new subpackge for the OFP implementation
 
