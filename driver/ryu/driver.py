@@ -60,6 +60,7 @@ class Driver(app_manager.RyuApp):
         self.publisherCtx = zmq.Context()
         self.publisher = self.publisherCtx.socket(zmq.PUB)
         self.publisher.bind("ipc:///tmp/controller.ipc")
+        self.publisherTopic = "controller"
 
         self.subscriberCtx = zmq.Context()
         self.subscriber = self.subscriberCtx.socket(zmq.SUB)
@@ -75,8 +76,18 @@ class Driver(app_manager.RyuApp):
         datapath = ev.msg.datapath
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
+        msg = ev.msg
         self.dpstore[datapath.id] = {"dp_obj": datapath}
         
+        msg_json = simplejson.dumps({
+            "OFPSwitchFeatures" : {
+            "capabilities": msg.capabilities,
+            "datapath_id": msg.datapath_id,
+            "n_tables":msg.n_tables}}
+        )
+        self.publisher.send_multipart([self.publisherTopic, msg_json])
+        
+        # Install the empty match
         match = parser.OFPMatch()
         actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
                                           ofproto.OFPCML_NO_BUFFER)]
@@ -97,15 +108,16 @@ class Driver(app_manager.RyuApp):
         dpid = datapath.id
 
         msg_json = simplejson.dumps(
-                {'OFPPacketIn': {'buffer_id': msg.buffer_id, 'match':
-                {'OFPMatch': {'oxm_fields': [ {'OXMTlv':
+                {'OFPPacketIn': {
+                    'buffer_id': msg.buffer_id, 
+                    'match': {
+                        'OFPMatch': {'oxm_fields': [ {'OXMTlv':
                 {'field': "in_port", 'value': msg.match['in_port'] }},
                 {'OXMTlv':{'field': "eth_dst", 'value': dst }},
                 {'OXMTlv':{'field': "eth_src", 'value': src }},]}},
                 'msg_len': msg.total_len, 'data': data.encode('hex'),
                 'datapath_id': dpid, 'datapath': dpid}}, indent = 3)
-        topic = "controller"
-        self.publisher.send_multipart([topic, msg_json])
+        self.publisher.send_multipart([self.publisherTopic, msg_json])
             
     def add_flow(self, datapath, priority, match, actions):
         ofproto = datapath.ofproto
