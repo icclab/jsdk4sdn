@@ -62,11 +62,11 @@ For executing and working with the SDK4SDN, you need the following three major c
 
 This example here explains how to run a simple network topology with the SDK4SDN, Ryu SDN controller and mininet. You can create the full stack in 3 steps:
 
-1. Install the Ryu controller with the corresponding SDK4SDN driver. The installation instructions can be found in this repository in the driver directory.
-2. Install the SDK4SDN as described before in the section "Building and Installing SDK4SDN"
+1. Install the SDK4SDN as described before in the section "Building and Installing SDK4SDN"
+2. Install the Ryu controller with the corresponding SDK4SDN driver. The installation instructions can be found in this repository in the `driver/ryu` directory.
 3. Create a mininet vritual machine with VirtualBox. The SDK4SDN runs at the moment only with OpenFlow 1.3. This means that you have to use (installed and compiled) the user switch of mininet https://github.com/CPqD/ofsoftswitch13
 
-If you have problems installing mininet with the ofsoftswitch13, you can also download the ready made applience from here: [VBox mininet VM with ofsoftswitch13](http://example.com/ "mininet VM").
+If you have problems installing mininet with the ofsoftswitch13, you can also download the ready made applience from here: [VBox mininet VM with ofsoftswitch13](https://owncloud.engineering.zhaw.ch/public.php?service=files&t=bb43c5b09b7d69322ba75e0d9c55e875 "mininet VM").
 
 After everything is installed and setup, you can start the example. On your local machine, start the Ryu controller and the SDK4SDN. It does not matter, if you start first the SDK4SDN or the Ryu controller, they connect to each other with ZMQ sockets. Thus, both sides have a message queue.
 
