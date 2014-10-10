@@ -33,7 +33,6 @@
 
 package app;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import ro.fortsoft.pf4j.Extension;
 import sdk4sdn.Network;
@@ -83,9 +82,8 @@ public class L2Switch implements OFPEventPacketIn {
 			out_port = "FLOOD";
 		}
 		
-		OpenFlow message = new OpenFlow();
-		
 		if("FLOOD".equals(out_port)) {
+			OpenFlow message = new OpenFlow();
 			//Create a packetOut message
 			OFPPacketOut packetOut = OFPMessageFactory.CreatePacketOut(out_port, OFPMessage);
 
@@ -94,8 +92,10 @@ public class L2Switch implements OFPEventPacketIn {
 			
 			//now compile the message
 			message.setOFPPacketOut(packetOut);
+			network.Send(message);
 		}
 		else {
+			OpenFlow message = new OpenFlow();
 			//Create an actions object that holds all actions
 			actions actions = new actions();
 			OFPActionOutput action = OFPMessageFactory.CreateActionOutput(out_port);
@@ -113,8 +113,15 @@ public class L2Switch implements OFPEventPacketIn {
 
 			//now compile the message
 			message.setOFPFlowMod(flowMod);
+			network.Send(message);
+			
+			//The packet still needs to be send to the destination
+			message = new OpenFlow();
+			OFPPacketOut packetOut = OFPMessageFactory.CreatePacketOut(out_port, OFPMessage);
+			message.setOFPPacketOut(packetOut);
+			network.Send(message);
 		}
 
-		network.Send(message);
+		
 	}
 }
