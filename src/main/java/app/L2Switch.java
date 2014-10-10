@@ -50,6 +50,12 @@ public class L2Switch implements OFPEventPacketIn, OFPEventSwitchFeatures {
 	public L2Switch(){
 		//FIXME: Currently unused, maybe initialize the map or remove
 	}
+	
+	@Override
+	public void switchFeatures(OpenFlow OFPMessage, Network network) {
+		//Just to show how it works if your app listns to multiple events
+		System.out.println("Found a new device with ID: " + OFPMessage.getOFPSwitchFeatures().getDatapath_id());
+	}
 
 	@Override
 	public void packetIn(OpenFlow OFPMessage, Network network) {
@@ -124,9 +130,4 @@ public class L2Switch implements OFPEventPacketIn, OFPEventSwitchFeatures {
 		
 	}
 
-	@Override
-	public void switchFeatures(OpenFlow OFPMessage, Network network) {
-		//Just to show how it works if your app listns to multiple events
-		System.out.println("Found a new device with ID: " + OFPMessage.getOFPSwitchFeatures().getDatapath_id());
-	}
 }
