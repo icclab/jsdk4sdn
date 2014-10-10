@@ -12,43 +12,43 @@ with maven. The following instructions were executed on a freshly installed
 ubuntu 14.04 server. Prepare the system by installing the packages:
 
 ```bash
-# apt-get update
-# apt-get upgrade
-# apt-get install maven gcc g++ git cmake libtool automake autoconf pkg-config openjdk-7-jdk
+apt-get update
+apt-get upgrade
+apt-get install maven gcc g++ git cmake libtool automake autoconf pkg-config openjdk-7-jdk
 ```
 
 Get zeromq and jzmq and build them like this:
 
 ```bash
-# cd /usr/local/src/
-# git clone https://github.com/zeromq/zeromq4-x.git
-# git clone https://github.com/zeromq/jzmq.git
-# cd zeromq4-x
-# ./autogen.sh
-# ./configure
-# make
-# make install
-# cd ../jzmq
-# ./autogen.sh
-# ./configure --prefix=/usr
-# make
-# make install
+cd /usr/local/src/
+git clone https://github.com/zeromq/zeromq4-x.git
+git clone https://github.com/zeromq/jzmq.git
+cd zeromq4-x
+./autogen.sh
+./configure
+make
+make install
+cd ../jzmq
+./autogen.sh
+./configure --prefix=/usr
+make
+make install
 ```
 
 Now install the SDK4SDN as follows
 
 ```bash
-# cd /usr/local/src/
-# git clone gitor@dornbirn.zhaw.ch:software-defined-networking/jsdk4sdn.git
-# cd jsdk4sdn/
-# mvn clean install
+cd /usr/local/src/
+git clone gitor@dornbirn.zhaw.ch:software-defined-networking/jsdk4sdn.git
+cd jsdk4sdn/
+mvn clean install
 ```
 
 Run the SDK4SDN
 
 ```bash
-# cd /usr/local/src/jsdk4sdn
-# mvn "-Dexec.args=-classpath %classpath sdk4sdn.Sdk4Sdn" -Dexec.executable=java org.codehaus.mojo:exec-maven-plugin:1.2.1:exec
+cd /usr/local/src/jsdk4sdn
+mvn "-Dexec.args=-classpath %classpath sdk4sdn.Sdk4Sdn" -Dexec.executable=java org.codehaus.mojo:exec-maven-plugin:1.2.1:exec
 ```
 
 Running the full Stack
@@ -71,17 +71,17 @@ If you have problems installing mininet with the ofsoftswitch13, you can also do
 After everything is installed and setup, you can start the example. On your local machine, start the Ryu controller and the SDK4SDN. It does not matter, if you start first the SDK4SDN or the Ryu controller, they connect to each other with ZMQ sockets. Thus, both sides have a message queue.
 
 ```bash
-localhost@terminal1 # cd /usr/local/src
-localhost@terminal1 # mvn "-Dexec.args=-classpath %classpath sdk4sdn.Sdk4Sdn" -Dexec.executable=java org.codehaus.mojo:exec-maven-plugin:1.2.1:exec
-localhost@terminal2 # cd /usr/local/src/ryu
-localhost@terminal2 # cd ryu-manager ryu/app/driver.py
+cd /usr/local/src
+mvn "-Dexec.args=-classpath %classpath sdk4sdn.Sdk4Sdn" -Dexec.executable=java org.codehaus.mojo:exec-maven-plugin:1.2.1:exec
+cd /usr/local/src/ryu
+cd ryu-manager ryu/app/driver.py
 ```
 
 Now start a simple topology in the virtual machine with mininet. For this VM, I always setup two network interfaces: The first one is a Host-Only adapter and the second one is NAT. The default gateway of the Host-Only adapter stays always at the IP 192.168.56.1. So every VM can connect via this IP to your localhost, no matter, what IP it's getting assigned by the VBox Host-Only adapter.
 
 ```bash
-vm-mininet@terminal1 # mn -c
-vm-mininet@terminal1 # mn --controller=remote,ip=192.168.56.1,port=6633 --switch=user
+mn -c
+mn --controller=remote,ip=192.168.56.1,port=6633 --switch=user
 mininet> h1 ping h2
 ```
 
