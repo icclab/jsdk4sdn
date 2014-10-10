@@ -104,12 +104,18 @@ public class Network {
 		log.info("Connecting to: ipc:///tmp/"+this.SubDescriptor+".ipc");
 		
 		while (!Thread.currentThread ().isInterrupted ()) {
+			OpenFlow OFPMessage = new OpenFlow();
 			//FIXME: Do something usefull with the topic
 			String topic = this.Subscriber.recvStr(Charset.defaultCharset());
 			String msg = this.Subscriber.recvStr(Charset.defaultCharset());
 			
 			Gson gson = new Gson();
-			OpenFlow OFPMessage = gson.fromJson(msg, OpenFlow.class);
+			try {
+				OFPMessage = gson.fromJson(msg, OpenFlow.class);
+			}
+			catch(Exception e) {
+				log.error(e.getMessage(), e);
+			}
 			
 			//FIXME: Put this code somewhere else
 			//Here we check for a packet_in and execute all packet_in
@@ -134,8 +140,16 @@ public class Network {
 	}
 	
 	public void Send(OpenFlow OFPMessage) {
+		String response = "";
 		Gson gson = new Gson();
-		String response = gson.toJson(OFPMessage);
+		
+		try {
+			response = gson.toJson(OFPMessage);
+		}
+		catch(Exception e) {
+			log.error(e.getMessage(), e);
+		}
+		
 		this.Publisher.sendMore("sdk4sdn");
 		this.Publisher.send(response);
 	}
