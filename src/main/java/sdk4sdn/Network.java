@@ -47,7 +47,7 @@ import sdk4sdn.openflow13.*;
  *
  * @author aepp
  */
-public class Network implements OFPSendFlowMod{
+public class Network {
 	
 	ZMQ.Context PubContext;
 	
@@ -107,6 +107,7 @@ public class Network implements OFPSendFlowMod{
 			//FIXME: Do something usefull with the topic
 			String topic = this.Subscriber.recvStr(Charset.defaultCharset());
 			String msg = this.Subscriber.recvStr(Charset.defaultCharset());
+			System.out.println(msg);
 			
 			Gson gson = new Gson();
 			OpenFlow OFPMessage = gson.fromJson(msg, OpenFlow.class);
@@ -120,9 +121,10 @@ public class Network implements OFPSendFlowMod{
 		}
 	}
 	
-	public void send(OpenFlow OFPMessage) {
+	public void Send(OpenFlow OFPMessage) {
 		Gson gson = new Gson();
 		String response = gson.toJson(OFPMessage);
+		System.out.println(response);
 		this.Publisher.sendMore("sdk4sdn");
 		this.Publisher.send(response);
 	}

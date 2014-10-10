@@ -86,54 +86,35 @@ public class L2Switch implements OFPEventPacketIn {
 		OpenFlow message = new OpenFlow();
 		
 		if("FLOOD".equals(out_port)) {
-			OFPPacketOut packetOut = new OFPPacketOut();
-			actions output = new actions();
-			OFPActionOutput OFPOutput = new OFPActionOutput();
-			OFPOutput.setOut_port(out_port);
-			output.setOFPActionOutput(OFPOutput);
+			//Create a packetOut message
+			OFPPacketOut packetOut = OFPMessageFactory.CreatePacketOut(out_port, OFPMessage);
+
+			//e.g. Set the in_port to a different value
+			//packetOut.setIn_port(in_port);
 			
-			packetOut.setActions(Arrays.asList(output));
-			packetOut.setBuffer_id(OFPMessage.getOFPPacketIn().getBuffer_id());
-			packetOut.setData(OFPMessage.getOFPPacketIn().getData());
-			packetOut.setDatapath_id(OFPMessage.getOFPPacketIn().getDatapath_id());
-			packetOut.setIn_port(in_port);
-			
+			//now compile the message
 			message.setOFPPacketOut(packetOut);
 		}
 		else {
-			OFPFlowMod flowMod = new OFPFlowMod();
-			instructions instructionSet = new instructions();
-			actions output = new actions();
-			match l2match = new match();
+			//Create an actions object that holds all actions
+			actions actions = new actions();
+			OFPActionOutput action = OFPMessageFactory.CreateActionOutput(out_port);
+			actions.setOFPActionOutput(action);
+			
+			//Create a match object that holds all matches
 			oxm_fields fields = new oxm_fields();
-
-			OFPActionOutput OFPOutput = new OFPActionOutput();
-			OFPOutput.setOut_port(out_port);
-			output.setOFPActionOutput(OFPOutput);
-
-			OFPInstructionActions OFPAction = new OFPInstructionActions();
-			OFPAction.setActions(Arrays.asList(output));
-			instructionSet.setOFPInstructionActions(OFPAction);
-
-			OFPMatch OFPMatch = new OFPMatch();
 			OXMTlv fieldEthDst = new OXMTlv();
 			fieldEthDst.setField("eth_dst");
 			fieldEthDst.setValue(eth_dst);
 			fields.setOXMTlv(fieldEthDst);
 			
-			OFPMatch.setOxm_fields(Arrays.asList(fields));
-			l2match.setOFPMatch(OFPMatch);
+			//Since we have the fields and the action, we can create a FlowMod
+			OFPFlowMod flowMod = OFPMessageFactory.CreateFlowMod(actions, fields, OFPMessage);
 
-			flowMod.setBuffer_id(OFPMessage.getOFPPacketIn().getBuffer_id());
-			flowMod.setDatapath_id(OFPMessage.getOFPPacketIn().getDatapath_id());
-			flowMod.setPriority(123);
-			flowMod.setTable_id(0);
-			flowMod.setInstructions(Arrays.asList(instructionSet));
-			flowMod.setMatch(l2match);
-			
+			//now compile the message
 			message.setOFPFlowMod(flowMod);
 		}
 
-		network.send(message);
+		network.Send(message);
 	}
 }

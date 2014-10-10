@@ -36,12 +36,12 @@ package sdk4sdn.openflow13;
 import java.util.List;
 
 public class oxm_fields{
-   	private OXMTlv OXMTlv;
+     private OXMTlv OXMTlv;
 
- 	public OXMTlv getOXMTlv(){
-		return this.OXMTlv;
-	}
-	public void setOXMTlv(OXMTlv OXMTlv){
-		this.OXMTlv = OXMTlv;
-	}
+   public OXMTlv getOXMTlv(){
+    return this.OXMTlv;
+  }
+  public void setOXMTlv(OXMTlv OXMTlv){
+    this.OXMTlv = OXMTlv;
+  }
 }
