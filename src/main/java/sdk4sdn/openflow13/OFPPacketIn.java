@@ -33,8 +33,6 @@
 
 package sdk4sdn.openflow13;
 
-import java.util.List;
-
 public class OFPPacketIn{
    	private Number buffer_id;
    	private String data;

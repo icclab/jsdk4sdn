@@ -33,8 +33,6 @@
 
 package sdk4sdn.openflow13;
 
-import java.util.List;
-
 public class OpenFlow{
    	private OFPPacketIn OFPPacketIn;
 	private OFPFlowMod OFPFlowMod;

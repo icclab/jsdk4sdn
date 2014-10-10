@@ -33,7 +33,6 @@
 
 package sdk4sdn;
 
-import sdk4sdn.openflow13.OFPSendFlowMod;
 import sdk4sdn.openflow13.OFPEventPacketIn;
 import com.google.gson.Gson;
 import java.nio.charset.Charset;
@@ -41,7 +40,6 @@ import java.util.List;
 import org.zeromq.ZMQ;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ro.fortsoft.pf4j.PluginManager;
 import sdk4sdn.openflow13.*;
 /**
  *
