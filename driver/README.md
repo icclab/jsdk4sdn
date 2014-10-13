@@ -225,3 +225,45 @@ This message is send by the SDK4SDN to the corresponding controller. Out of this
 	  }
    }
 ```
+
+Simple GOTO
+-----------
+
+This message is send by the SDK4SDN to the corresponding controller. Out of this message, the controller installes a GOTO Action to another table in the switch.
+
+```json
+   {
+	  "OFPFlowMod": {
+		 "buffer_id": 2,
+		 "datapath_id": 25,
+		 "instructions": [
+			{
+			   "OFPInstructionGotoTable": {
+				  "table_id": 1
+			   }
+			}
+		 ], 
+		 "match": {
+			"OFPMatch": {
+			   "length": 22, 
+			   "oxm_fields": [
+				  {
+					 "OXMTlv": {
+						"field": "in_port",
+						"value": 6
+					 }
+				  }, 
+				  {
+					 "OXMTlv": {
+						"field": "eth_src",
+						"value": "f2:0b:a4:7d:f8:ea"
+					 }
+				  }
+			   ]
+			}
+		 },
+		 "priority": 123, 
+		 "table_id": 0
+	  }
+   }
+```
