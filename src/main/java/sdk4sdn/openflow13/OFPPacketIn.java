@@ -36,7 +36,7 @@ package sdk4sdn.openflow13;
 public class OFPPacketIn{
    	private Number buffer_id;
    	private String data;
-   	private Number datapath;
+   	private datapath datapath;
    	private Number datapath_id;
    	private match match;
    	private Number msg_len;
@@ -53,10 +53,10 @@ public class OFPPacketIn{
 	public void setData(String data){
 		this.data = data;
 	}
- 	public Number getDatapath(){
+ 	public datapath getDatapath(){
 		return this.datapath;
 	}
-	public void setDatapath(Number datapath){
+	public void setDatapath(datapath datapath){
 		this.datapath = datapath;
 	}
  	public Number getDatapath_id(){

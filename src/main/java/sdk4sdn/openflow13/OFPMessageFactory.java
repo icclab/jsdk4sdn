@@ -34,6 +34,7 @@
 package sdk4sdn.openflow13;
 
 import java.util.Arrays;
+import java.util.List;
 
 /**
  *
@@ -68,7 +69,7 @@ public class OFPMessageFactory {
 		return message;
 	}
 	
-	public static OFPFlowMod CreateFlowMod(actions actions, oxm_fields fields){
+	public static OFPFlowMod CreateFlowModAction(actions actions, List<oxm_fields> fields){
 		OFPFlowMod message = new OFPFlowMod();
 		
 		instructions instructionSet = new instructions();
@@ -80,7 +81,7 @@ public class OFPMessageFactory {
 
 		OFPMatch OFPMatch = new OFPMatch();
 			
-		OFPMatch.setOxm_fields(Arrays.asList(fields));
+		OFPMatch.setOxm_fields(fields);
 		match.setOFPMatch(OFPMatch);
 		message.setInstructions(Arrays.asList(instructionSet));
 		message.setMatch(match);
@@ -88,8 +89,36 @@ public class OFPMessageFactory {
 		return message;
 	}
 	
-	public static OFPFlowMod CreateFlowMod(actions actions, oxm_fields fields, OpenFlow inMessage){
-		OFPFlowMod message = OFPMessageFactory.CreateFlowMod(actions, fields);
+	public static OFPFlowMod CreateFlowModGoTo(OFPInstructionGotoTable OFPInstructionGotoTable, List<oxm_fields> fields){
+		OFPFlowMod message = new OFPFlowMod();
+		
+		instructions instructionSet = new instructions();
+		match match = new match();
+		
+		instructionSet.setOFPInstructionGotoTable(OFPInstructionGotoTable);
+
+		OFPMatch OFPMatch = new OFPMatch();
+			
+		OFPMatch.setOxm_fields(fields);
+		match.setOFPMatch(OFPMatch);
+		message.setInstructions(Arrays.asList(instructionSet));
+		message.setMatch(match);
+		
+		return message;
+	}
+	
+	public static OFPFlowMod CreateFlowModGoTo(OFPInstructionGotoTable OFPInstructionGotoTable, List<oxm_fields> fields, OpenFlow inMessage){
+		OFPFlowMod message = OFPMessageFactory.CreateFlowModGoTo(OFPInstructionGotoTable, fields);
+		
+		message.setDatapath_id(inMessage.getOFPPacketIn().getDatapath_id());
+		message.setPriority(1);
+		message.setTable_id(0);
+		
+		return message;
+	}
+	
+	public static OFPFlowMod CreateFlowModAction(actions actions, List<oxm_fields> fields, OpenFlow inMessage){
+		OFPFlowMod message = OFPMessageFactory.CreateFlowModAction(actions, fields);
 		
 		message.setBuffer_id(inMessage.getOFPPacketIn().getBuffer_id());
 		message.setDatapath_id(inMessage.getOFPPacketIn().getDatapath_id());
