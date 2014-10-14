@@ -35,11 +35,21 @@ package sdk4sdn.openflow13;
 
 public class instructions{
    	private OFPInstructionActions OFPInstructionActions;
+	private OFPInstructionGotoTable OFPInstructionGotoTable;
 
  	public OFPInstructionActions getOFPInstructionActions(){
 		return this.OFPInstructionActions;
 	}
+
 	public void setOFPInstructionActions(OFPInstructionActions OFPInstructionActions){
 		this.OFPInstructionActions = OFPInstructionActions;
+	}
+
+	public OFPInstructionGotoTable getOFPInstructionGotoTable(){
+		return this.OFPInstructionGotoTable;
+	}
+
+	public void setOFPInstructionGotoTable(OFPInstructionGotoTable OFPInstructionGotoTable){
+		this.OFPInstructionGotoTable = OFPInstructionGotoTable;
 	}
 }
