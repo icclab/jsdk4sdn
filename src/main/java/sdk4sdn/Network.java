@@ -40,6 +40,9 @@ import java.util.List;
 import org.zeromq.ZMQ;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sdk4sdn.lib.EventLinkEnter;
+import sdk4sdn.lib.EventSwitchEnter;
+import sdk4sdn.lib.Topology;
 import sdk4sdn.openflow13.*;
 /**
  *
@@ -62,6 +65,10 @@ public class Network {
 	List<OFPEventPacketIn> OFPEventPacketIns;
 	
 	List<OFPEventSwitchFeatures> OFPEventSwitchFeaturesList;
+	
+	List<EventLinkEnter> EventLinkEnterList;
+	
+	List<EventSwitchEnter> EventSwitchEnterList;
 	
 	private static final Logger log = LoggerFactory.getLogger(Network.class);
 	
@@ -101,41 +108,67 @@ public class Network {
 		//  Subscribe to zipcode, default is NYC, 10001
 		this.Subscriber.connect("ipc:///tmp/controller.ipc");
 		this.Subscriber.subscribe("controller".getBytes());
+		this.Subscriber.subscribe("topology".getBytes());
 		log.info("Connecting to: ipc:///tmp/"+this.SubDescriptor+".ipc");
 		
 		while (!Thread.currentThread ().isInterrupted ()) {
 			OpenFlow OFPMessage = new OpenFlow();
+			Topology topology = new Topology();
 			//FIXME: Do something usefull with the topic
 			String topic = this.Subscriber.recvStr(Charset.defaultCharset());
 			String msg = this.Subscriber.recvStr(Charset.defaultCharset());
 			
 			Gson gson = new Gson();
-			try {
-				OFPMessage = gson.fromJson(msg, OpenFlow.class);
+			if("controller".equals(topic)) {
+				try {
+					OFPMessage = gson.fromJson(msg, OpenFlow.class);
+				}
+				catch(Exception e) {
+					log.error(e.getMessage(), e);
+				}
+				//FIXME: Put this code somewhere else
+				//Here we check for a packet_in and execute all packet_in
+				//extensions
+				if(OFPMessage.getOFPPacketIn() != null) {
+					for (OFPEventPacketIn packetIn : this.OFPEventPacketIns) {
+						packetIn.packetIn(OFPMessage, this);
+					}
+				}
+				//Here we check for a switch_feature and execute all switch_feature
+				//extensions
+				else if(OFPMessage.getOFPSwitchFeatures() != null) {
+					for (OFPEventSwitchFeatures switchFeature : this.OFPEventSwitchFeaturesList) {
+						switchFeature.switchFeatures(OFPMessage, this);
+					}
+				}
+				//Didn't found an event
+				else {
+					log.info("Event not implemented");
+				}
 			}
-			catch(Exception e) {
-				log.error(e.getMessage(), e);
+			else if("topology".equals(topic)) {
+				try {
+					topology = gson.fromJson(msg, Topology.class);
+				}
+				catch(Exception e) {
+					log.error(e.getMessage(), e);
+				}
+				
+				if(topology.getSrc() != null) {
+					for (EventLinkEnter linkEnter : this.EventLinkEnterList) {
+						linkEnter.linkEnter(topology, this);
+					}
+				}
+				else if(topology.getPorts() != null) {
+					for (EventSwitchEnter switchEnter : this.EventSwitchEnterList) {
+						switchEnter.switchEnter(topology, this);
+					}
+				}
+				else {
+					log.info("Event not implemented");
+				}
 			}
 			
-			//FIXME: Put this code somewhere else
-			//Here we check for a packet_in and execute all packet_in
-			//extensions
-			if(OFPMessage.getOFPPacketIn() != null) {
-				for (OFPEventPacketIn packetIn : this.OFPEventPacketIns) {
-					packetIn.packetIn(OFPMessage, this);
-				}
-			}
-			//Here we check for a switch_feature and execute all switch_feature
-			//extensions
-			else if(OFPMessage.getOFPSwitchFeatures() != null) {
-				for (OFPEventSwitchFeatures switchFeature : this.OFPEventSwitchFeaturesList) {
-					switchFeature.switchFeatures(OFPMessage, this);
-				}
-			}
-			//Didn't found an event
-			else {
-				log.info("Event not implemented");
-			}
 		}
 	}
 	
@@ -161,4 +194,13 @@ public class Network {
 	public void SetSwitchFeaturesSubscribers(List<OFPEventSwitchFeatures> OFPEventSwitchFeatures){
 		this.OFPEventSwitchFeaturesList = OFPEventSwitchFeatures;
 	}
+	
+	public void SetLinkEnterSubscribers(List<EventLinkEnter> EventLinkEnterList){
+		this.EventLinkEnterList = EventLinkEnterList;
+	}
+	
+	public void SetSwitchEnterSubscribers(List<EventSwitchEnter> EventSwitchEnterList){
+		this.EventSwitchEnterList = EventSwitchEnterList;
+	}
+	
 }
