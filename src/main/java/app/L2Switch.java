@@ -47,7 +47,7 @@ public class L2Switch implements OFPEventPacketIn, OFPEventSwitchFeatures {
 	
 	HashMap<String, String> ethDstMap = new HashMap<>();
 	
-	public void L2Switch(){
+	public void L2Switch() {
 		//FIXME: Currently unused, maybe initialize the map or remove
 	}
 	
@@ -126,8 +126,5 @@ public class L2Switch implements OFPEventPacketIn, OFPEventSwitchFeatures {
 			message.setOFPPacketOut(packetOut);
 			network.Send(message);
 		}
-
-		
 	}
-
 }
