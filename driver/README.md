@@ -280,3 +280,46 @@ This message is send by the SDK4SDN to the corresponding controller. Out of this
 	  }
    }
 ```
+
+Switch Enter
+------------
+
+The Controller sends this event to notify, that a new device is available on the network ready to receive OFP messages
+
+```json
+   {
+	  "ports":[
+		 {
+			"hw_addr":"ee:dc:9f:b3:f9:3b",
+			"port_no":"1",
+			"dpid":"3"
+		 },
+		 {
+			"hw_addr":"0e:0a:8a:9d:cc:c8",
+			"port_no":"2",
+			"dpid":"3"
+		 }
+	  ],
+	  "dpid":"3"
+   }
+```
+
+Link Enter
+----------
+
+The Controller sends this event to notify, that a new link between two devices is available
+
+```json
+   {
+	  "src":{
+		 "hw_addr":"ee:dc:9f:b3:f9:3b",
+		 "port_no":"1",
+		 "dpid":"3"
+	  },
+	  "dst":{
+		 "hw_addr":"1e:3c:1c:9c:fd:e2",
+		 "port_no":"4",
+		 "dpid":"1"
+	  }
+   }
+```
