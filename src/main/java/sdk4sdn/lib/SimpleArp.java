@@ -35,7 +35,6 @@ package sdk4sdn.lib;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import ro.fortsoft.pf4j.Extension;
 import sdk4sdn.Network;
 import sdk4sdn.openflow13.*;
@@ -127,7 +126,6 @@ public class SimpleArp implements OFPEventSwitchFeatures, OFPEventPacketIn {
 				in_port = field.getOXMTlv().getValue();
 			}
 		}
-		System.out.println(eth_dst);
 		if("ff:ff:ff:ff:ff:ff".equals(eth_dst)){
 			Number dpid = OFPMessage.getOFPPacketIn().getDatapath_id();
 			if(null == this.broadcastStore.get(dpid)) {
@@ -212,8 +210,6 @@ public class SimpleArp implements OFPEventSwitchFeatures, OFPEventPacketIn {
 			//now compile the message
 			message.setOFPFlowMod(flowMod);
 			network.Send(message);
-		}
-		
+		}	
 	}
-	
 }
