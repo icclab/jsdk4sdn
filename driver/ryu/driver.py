@@ -45,7 +45,6 @@ import logging
 import os
 import traceback
 from ryu.lib import hub
-import pprint
 import yaml
 
 LOG = logging.getLogger('ryu.app.driver')
@@ -78,25 +77,23 @@ class Driver(app_manager.RyuApp):
         parser = datapath.ofproto_parser
         msg = ev.msg
         self.dpstore[datapath.id] = {"dp_obj": datapath}
+        print datapath.id
         
         msg_json = simplejson.dumps({
             "OFPSwitchFeatures" : {
             "capabilities": msg.capabilities,
             "datapath_id": msg.datapath_id,
-            "n_tables":msg.n_tables}}
+            "n_tables":msg.n_tables
+            }
+        }
         )
         self.publisher.send_multipart([self.publisherTopic, msg_json])
-        
-        # Install the empty match
-        match = parser.OFPMatch()
-        actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
-                                          ofproto.OFPCML_NO_BUFFER)]
-        self.add_flow(datapath, 0, match, actions)
 
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def handler_packetin(self, ev):
         msg = ev.msg
         datapath = msg.datapath
+        self._create_dp_obj(datapath)
         ofproto = datapath.ofproto
         ofp_parser = datapath.ofproto_parser
         data = msg.data
@@ -116,7 +113,7 @@ class Driver(app_manager.RyuApp):
                 {'OXMTlv':{'field': "eth_dst", 'value': dst }},
                 {'OXMTlv':{'field': "eth_src", 'value': src }},]}},
                 'msg_len': msg.total_len, 'data': data.encode('hex'),
-                'datapath_id': dpid, 'datapath': dpid}}, indent = 3)
+                'datapath_id': dpid, 'datapath': self.dpstore[datapath.id].get("dp_json").get("datapath")}}, indent = 3)
         self.publisher.send_multipart([self.publisherTopic, msg_json])
             
     def add_flow(self, datapath, priority, match, actions):
@@ -144,6 +141,8 @@ class Driver(app_manager.RyuApp):
         self.logger.info("sdk4sdn handler died")
         
     def _send_flow_mod(self, obj):
+        inst_type = False
+        table_id = 0
         flow_mod = obj.get("OFPFlowMod")
         datapath = self.dpstore.get(flow_mod.get("datapath_id"))
         datapath = datapath.get("dp_obj")
@@ -152,16 +151,26 @@ class Driver(app_manager.RyuApp):
         # FIXME: put this in a instruction parser
         for instruction in instructions:
             if "OFPInstructionActions" in instruction:
+                inst_type = "OFPInstructionActions"
                 actions = self._parse_action(instruction.get("OFPInstructionActions").get("actions"))
-        
+            if "OFPInstructionGotoTable" in instruction:
+                inst_type = "OFPInstructionGotoTable"
+                table_id = instruction.get("OFPInstructionGotoTable").get("table_id")
+                goto = ofproto_v1_3_parser.OFPInstructionGotoTable(table_id)
+
         match = flow_mod.get("match")
         match = self._pars_match(match)
         
-        inst = [ofproto_v1_3_parser.OFPInstructionActions(ofproto_v1_3.OFPIT_APPLY_ACTIONS,
+        if inst_type == "OFPInstructionActions":
+            inst = [ofproto_v1_3_parser.OFPInstructionActions(ofproto_v1_3.OFPIT_APPLY_ACTIONS,
                                             actions)]
+        if inst_type == "OFPInstructionGotoTable":
+            inst = [goto]
+        if flow_mod.get("table_id"):
+            table_id = int(flow_mod.get("table_id"))
 
-        mod = ofproto_v1_3_parser.OFPFlowMod(datapath=datapath, priority=int(flow_mod.get("priority")),
-                                match=match, instructions=inst)
+        mod = ofproto_v1_3_parser.OFPFlowMod(datapath=datapath, priority=int(flow_mod.get("priority")), 
+                                             match=match, instructions=inst, table_id=table_id)
 
         datapath.send_msg(mod)
         
@@ -187,18 +196,41 @@ class Driver(app_manager.RyuApp):
             if "OFPActionOutput" in action:
                 out_port = action.get("OFPActionOutput").get("out_port")
                 if out_port == "FLOOD":
-                    out_port = ofproto_v1_3.OFPP_FLOOD
-                ret = [ofproto_v1_3_parser.OFPActionOutput(int(out_port))]
+                    ret = [ofproto_v1_3_parser.OFPActionOutput(ofproto_v1_3.OFPP_FLOOD, 0)]
+                elif out_port == "OFPP_CONTROLLER":
+                    print "Table miss"
+                    ret = [ofproto_v1_3_parser.OFPActionOutput(ofproto_v1_3.OFPP_CONTROLLER, ofproto_v1_3.OFPCML_NO_BUFFER)]
+                else :
+                    ret = [ofproto_v1_3_parser.OFPActionOutput(int(out_port))]
 
         return ret
     
     def _pars_match(self, matches):
         ret = False
+        ret_multiple = ""
         fields = matches.get("OFPMatch").get("oxm_fields")
         for field in fields:
             if "OXMTlv" in field:
-                field_name = field.get("OXMTlv").get("field")
-                field_value = field.get("OXMTlv").get("value")
-                ret = eval("ofproto_v1_3_parser.OFPMatch("+field_name+"="+"\""+field_value+"\""+")")
-        
+                if field.get("OXMTlv").get("field") == "":
+                    ret = eval("ofproto_v1_3_parser.OFPMatch()")
+                else :
+                    field_name = field.get("OXMTlv").get("field")
+                    field_value = field.get("OXMTlv").get("value")
+                    if field_name == "in_port":
+                        ret_multiple += str(field_name+"="+field_value+", ")
+                    else :
+                        ret_multiple += str(field_name+"="+"\""+field_value+"\", ")
+                    #ret = eval("ofproto_v1_3_parser.OFPMatch("+field_name+"="+"\""+field_value+"\""+")")
+        if not ret_multiple == "":
+            ret_multiple = ret_multiple[:-2]
+            print ret_multiple
+            ret = eval("ofproto_v1_3_parser.OFPMatch("+ret_multiple+")")
         return ret
+    
+    def _create_dp_obj(self, datapath):
+        if not self.dpstore.get(datapath.id).has_key("dp_json"):
+            dp_json = {"datapath":{"ports":[]}}
+            for port in datapath.ports:
+                dp_json.get("datapath").get("ports").extend([{"port_no":port}])
+            self.dpstore[datapath.id] = {"dp_obj": datapath, "dp_json" : dp_json}
+        

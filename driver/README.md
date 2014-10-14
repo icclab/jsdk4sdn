@@ -157,6 +157,19 @@ This describes the structure of message that entered the controller via the OFPP
 		 "reason": 1, 
 		 "table_id": 1, 
 		 "total_len": 42
+		 "datapath_id": 1
+		 "datapath": {
+			 "ports": [
+				{
+				  "port_no": 1
+				  "eth_addr": "f2:0b:a4:7d:f8:ea"
+				}
+				{
+				  "port_no": 2
+				  "eth_addr": "f2:0b:a4:89:f8:ea"
+				}
+			 ]
+		 }
 	  }
    }
 ```
