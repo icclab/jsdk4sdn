@@ -33,11 +33,15 @@
 
 package sdk4sdn;
 
-import sdk4sdn.openflow13.OFPEventPacketIn;
 import java.util.List;
+
 import ro.fortsoft.pf4j.DefaultPluginManager;
 import ro.fortsoft.pf4j.PluginManager;
+
+import sdk4sdn.lib.EventLinkEnter;
+import sdk4sdn.lib.EventSwitchEnter;
 import sdk4sdn.openflow13.OFPEventSwitchFeatures;
+import sdk4sdn.openflow13.OFPEventPacketIn;
 /**
  *
  * @author aepp
@@ -49,7 +53,7 @@ public class Sdk4Sdn {
 	 */
 	public static void main(String[] args) {
 		//The Plugin path, FIXME: I think this is not needed
-		//System.setProperty("pf4j.pluginsDir", "/home/staff/aepp/unix/NetBeansProjects/jsdk4sdn/src/app");
+		//System.setProperty("pf4j.pluginsDir", "/home/staff/aepp/unix/NetBeansProjects/jsdk4sdn/src/main/java/app");
 		
 		// Load and start the user SDN applications
 		PluginManager pluginManager = new DefaultPluginManager();
@@ -65,6 +69,8 @@ public class Sdk4Sdn {
 		//FIXME: Move this code in a OFPExtensionLoader
 		List<OFPEventPacketIn> OFPEventPacketIns = pluginManager.getExtensions(OFPEventPacketIn.class);
 		List<OFPEventSwitchFeatures> OFPEventSwitchFeaturesList = pluginManager.getExtensions(OFPEventSwitchFeatures.class);
+		List<EventLinkEnter> EventLinkEnterList = pluginManager.getExtensions(EventLinkEnter.class);
+		List<EventSwitchEnter> EventSwitchEnterList = pluginManager.getExtensions(EventSwitchEnter.class);
 		
 		// Create a brand new controller<->sdk4sdn connection
 		// Start the subscriber and connect
@@ -73,6 +79,8 @@ public class Sdk4Sdn {
 		Network ControllerConnection = new Network("sdk4sdn", "controller");
 		ControllerConnection.SetPacketInSubscribers(OFPEventPacketIns);
 		ControllerConnection.SetSwitchFeaturesSubscribers(OFPEventSwitchFeaturesList);
+		ControllerConnection.SetLinkEnterSubscribers(EventLinkEnterList);
+		ControllerConnection.SetSwitchEnterSubscribers(EventSwitchEnterList);
 		ControllerConnection.CreateSubscriber();
 		ControllerConnection.CreatePublisher();
 		ControllerConnection.Connect();
