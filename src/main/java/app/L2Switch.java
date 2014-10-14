@@ -33,6 +33,7 @@
 
 package app;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import ro.fortsoft.pf4j.Extension;
 import sdk4sdn.Network;
@@ -70,6 +71,11 @@ public class L2Switch implements OFPEventPacketIn, OFPEventSwitchFeatures {
 				eth_src = field.getOXMTlv().getValue();
 			}
 			if("eth_dst".equals(field.getOXMTlv().getField())) {
+				//only for debug reason
+				if("ff:ff:ff:ff:ff:ff".equals(eth_dst)){
+					System.out.println("Broadcast, stopping here");
+					return;
+				}
 				eth_dst = field.getOXMTlv().getValue();
 			}
 			if("in_port".equals(field.getOXMTlv().getField())) {
@@ -107,14 +113,16 @@ public class L2Switch implements OFPEventPacketIn, OFPEventSwitchFeatures {
 			actions.setOFPActionOutput(action);
 			
 			//Create a match object that holds all matches
+			ArrayList<oxm_fields> fieldsList = new ArrayList<>();
 			oxm_fields fields = new oxm_fields();
 			OXMTlv fieldEthDst = new OXMTlv();
 			fieldEthDst.setField("eth_dst");
 			fieldEthDst.setValue(eth_dst);
 			fields.setOXMTlv(fieldEthDst);
+			fieldsList.add(fields);
 			
 			//Since we have the fields and the action, we can create a FlowMod
-			OFPFlowMod flowMod = OFPMessageFactory.CreateFlowMod(actions, fields, OFPMessage);
+			OFPFlowMod flowMod = OFPMessageFactory.CreateFlowModAction(actions, fieldsList, OFPMessage);
 
 			//now compile the message
 			message.setOFPFlowMod(flowMod);
