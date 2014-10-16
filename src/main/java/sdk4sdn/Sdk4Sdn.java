@@ -61,21 +61,16 @@ public class Sdk4Sdn {
 		pluginManager.loadPlugins();
 		pluginManager.startPlugins();
 		
-		//Show a list of all subscribed plugins to the events
-		//FIXME: Remove this or extend it!!
-		/*List<OFPEventPacketIn> events = pluginManager.getExtensions(OFPEventPacketIn.class);
-        System.out.println(String.format("Found %d subscription for OFPEventPacketIn point '%s'", events.size(), OFPEventPacketIn.class.getName()));*/
+		// Create a brand new controller<->sdk4sdn connection
+		Network ControllerConnection = new Network("sdk4sdn", "controller");
 		
 		//Get all Extensions for a Extension Point
 		//FIXME: Move this code in a OFPExtensionLoader
-		Network ControllerConnection = new Network("sdk4sdn", "controller");
-		
 		setExtensions(ControllerConnection, pluginManager.getExtensions(OFPEventPacketIn.class), "OFPEventPacketIn");
 		setExtensions(ControllerConnection, pluginManager.getExtensions(OFPEventSwitchFeatures.class), "OFPEventSwitchFeatures");
 		setExtensions(ControllerConnection, pluginManager.getExtensions(EventLinkEnter.class), "EventLinkEnter");
 		setExtensions(ControllerConnection, pluginManager.getExtensions(EventSwitchEnter.class), "EventSwitchEnter");
 		
-		// Create a brand new controller<->sdk4sdn connection
 		// Start the subscriber and connect
 		//FIXME: Do something here, this gonna be big
 		//FIXME: Make the endpoints "sdk4sdn" and "controller" as variable
