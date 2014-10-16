@@ -70,7 +70,7 @@ public class SimpleArp implements OFPEventSwitchFeatures, OFPEventPacketIn {
 		oxm_fields fields = new oxm_fields();
 		OXMTlv fieldEthDst = new OXMTlv();
 		fieldEthDst.setField("eth_dst");
-		fieldEthDst.setValue("FF:FF:FF:FF:FF:FF");
+		fieldEthDst.setValue("ff:ff:ff:ff:ff:ff");
 		fields.setOXMTlv(fieldEthDst);
 		fieldsList.add(fields);
 		
@@ -80,6 +80,7 @@ public class SimpleArp implements OFPEventSwitchFeatures, OFPEventPacketIn {
 		OFPFlowMod flowMod = OFPMessageFactory.CreateFlowModGoTo(goTo, fieldsList);
 		flowMod.setDatapath_id(OFPMessage.getOFPSwitchFeatures().getDatapath_id());
 		flowMod.setPriority(123);
+		flowMod.setTable_id(0);
 		message.setOFPFlowMod(flowMod);
 		network.Send(message);
 		
@@ -126,6 +127,10 @@ public class SimpleArp implements OFPEventSwitchFeatures, OFPEventPacketIn {
 				in_port = field.getOXMTlv().getValue();
 			}
 		}
+		if("01:80:c2:00:00:0e".equals(eth_dst))
+			return;
+		if("33:33".equals(eth_dst.substring(0, 5)))
+			return;
 		if("ff:ff:ff:ff:ff:ff".equals(eth_dst)){
 			Number dpid = OFPMessage.getOFPPacketIn().getDatapath_id();
 			if(null == this.broadcastStore.get(dpid)) {

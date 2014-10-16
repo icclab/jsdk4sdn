@@ -34,15 +34,19 @@
 package sdk4sdn.lib;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import org.jgrapht.*;
 import org.jgrapht.graph.*;
 import ro.fortsoft.pf4j.Extension;
 import sdk4sdn.Network;
 import sdk4sdn.openflow13.OFPEventPacketIn;
+import sdk4sdn.openflow13.OFPMessageFactory;
+import sdk4sdn.openflow13.OFPPacketOut;
 import sdk4sdn.openflow13.OpenFlow;
+import sdk4sdn.openflow13.oxm_fields;
 
 /**
  *
@@ -51,30 +55,52 @@ import sdk4sdn.openflow13.OpenFlow;
 @Extension
 public class OneSwitch implements OFPEventPacketIn, EventSwitchEnter, EventLinkEnter {
 	
-	public HashMap<String, List> PortLinks = new HashMap<>();
+	public LinkedHashMap<String, List> PortLinks = new LinkedHashMap<>();
 	
-	public HashMap<String, List> PortSwitches = new HashMap<>();
+	public LinkedHashMap<String, List> PortSwitches = new LinkedHashMap<>();
 	
-	public HashMap<String, List> ports = new HashMap<>();
+	public LinkedHashMap<String, List> ports = new LinkedHashMap<>();
 	
-	public HashMap<String, String> mainDatapath = new HashMap<>();
+	public LinkedHashMap<String, String> mainDatapath = new LinkedHashMap<>();
 	
 	public DirectedGraph<String, DefaultEdge> directedGraph;
 	
 	public List<Topology> allLinks = new ArrayList<>();
 	
+	public MainDatapath datapath = new MainDatapath();
+	
 	public OneSwitch(){
 		this.directedGraph = new DefaultDirectedGraph<>(DefaultEdge.class);
-		System.out.println("New object");
 	}
 
 	@Override
 	public void packetIn(OpenFlow OFPMessage, Network network) {
-		System.out.print("The main datapath");
-		for (Map.Entry<String, String> entry : this.mainDatapath.entrySet()) {
-			System.out.print("{" + entry.getKey() + " " + entry.getValue() + "}");
+		String eth_src = "";
+		String eth_dst = "";
+		String in_port = "";
+		
+		for ( oxm_fields field : OFPMessage.getOFPPacketIn().getMatch().getOFPMatch().getOxm_fields()) {
+			if("eth_src".equals(field.getOXMTlv().getField())) {
+				eth_src = field.getOXMTlv().getValue();
+			}
+			if("eth_dst".equals(field.getOXMTlv().getField())) {
+				eth_dst = field.getOXMTlv().getValue();
+			}
+			if("in_port".equals(field.getOXMTlv().getField())) {
+				in_port = field.getOXMTlv().getValue();
+			}
 		}
-		System.out.println("");
+		
+		if("01:80:c2:00:00:0e".equals(eth_dst))
+			return;
+		if("ff:ff:ff:ff:ff:ff".equals(eth_dst))
+			return;
+		if("33:33".equals(eth_dst.substring(0, 5)))
+			return;
+		
+		for (EventMainDatapath packetIn : network.EventMainDatapathList) {
+			packetIn.packetInMainDatapath(network, this, OFPMessage, OFPMessage.getOFPPacketIn().getDatapath_id() + "." + in_port);
+		}
 	}
 
 	@Override
@@ -85,7 +111,7 @@ public class OneSwitch implements OFPEventPacketIn, EventSwitchEnter, EventLinkE
 			tmpPorts.add(port.getPort_no());
 		}
 		this.PortSwitches.put(topology.getDpid(), tmpPorts);
-		this.updateMainDatapath();
+		this.updateMainDatapath(topology);
 	}
 	
 	@Override
@@ -110,11 +136,11 @@ public class OneSwitch implements OFPEventPacketIn, EventSwitchEnter, EventLinkE
 			tmpPorts.add(topology.getSrc().getPort_no());
 			this.PortLinks.put(topology.getSrc().getDpid(), tmpPorts);
 		}
-		this.updateMainDatapath();
+		this.updateMainDatapath(topology);
 		this.updateDijkstraGraph();
 	}
 	
-	public void updateMainDatapath(){
+	public void updateMainDatapath(Topology topology){
 		//build the main datapath
 		for (Map.Entry<String, List> entry : this.PortSwitches.entrySet()) {
 			//Check if there are links available to remove them
@@ -126,13 +152,23 @@ public class OneSwitch implements OFPEventPacketIn, EventSwitchEnter, EventLinkE
 			List<String> portsToRemove = this.PortLinks.get(dpid);
 			List<String> portsAvailable = entry.getValue();
 			portsAvailable.removeAll(portsToRemove);
+			
+			Ports portObj = new Ports();
+			portObj.setDpid(dpid);
+			
 			//Add all ports from the available ports list
 			for (String port : portsAvailable) {
 				this.mainDatapath.put(dpid + "." + port, port);
+				
+				portObj.setPort_no(port);
+				this.datapath.addPort(portObj);
 			}
 			//Remove ports from mainDatapath
 			for (String port : portsToRemove) {
 				this.mainDatapath.remove(dpid + "." + port);
+				
+				portObj.setPort_no(port);
+				this.datapath.deletePort(portObj);
 			}
 		}
 	}
@@ -141,7 +177,24 @@ public class OneSwitch implements OFPEventPacketIn, EventSwitchEnter, EventLinkE
 		//build the dijkstra graph
 		for (Topology link : this.allLinks) {
 			this.directedGraph.addVertex(link.getSrc().getDpid());
+			this.directedGraph.addVertex(link.getDst().getDpid());
 			this.directedGraph.addEdge(link.getSrc().getDpid(), link.getDst().getDpid());
+		}
+	}
+	
+	public void floodFromSelf(Network network, OpenFlow OFPMessage, String in_port){
+		for (Map.Entry<String, String> entry : this.mainDatapath.entrySet()) {
+			String identifier = entry.getKey();
+			System.out.println("Send packet out on dpid: " + identifier);
+			if(identifier.equals(in_port))
+				continue;
+			String[] parts = identifier.split(Pattern.quote("."));
+			
+			OpenFlow message = new OpenFlow();
+			OFPPacketOut packetOut = OFPMessageFactory.CreatePacketOut(parts[1], OFPMessage);
+			packetOut.setDatapath_id(Integer.parseInt(parts[0]));
+			message.setOFPPacketOut(packetOut);
+			network.Send(message);
 		}
 	}
 }

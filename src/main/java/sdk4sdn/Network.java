@@ -42,6 +42,7 @@ import org.zeromq.ZMQ;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sdk4sdn.lib.EventLinkEnter;
+import sdk4sdn.lib.EventMainDatapath;
 import sdk4sdn.lib.EventSwitchEnter;
 import sdk4sdn.lib.Topology;
 import sdk4sdn.openflow13.*;
@@ -73,6 +74,8 @@ public class Network {
 	
 	List<EventSwitchEnter> EventSwitchEnterList;
 	
+	public List<EventMainDatapath> EventMainDatapathList;
+	
 	private static final Logger log = LoggerFactory.getLogger(Network.class);
 	
 	public Network(String Publisher, String Subscriber){
@@ -90,7 +93,6 @@ public class Network {
 		catch(Exception e) {
 			log.error(e.getMessage(), e);
 		}
-		
 	}
 	
 	public void CreateSubscriber(){
@@ -203,6 +205,10 @@ public class Network {
 	
 	public void SetSwitchEnterSubscribers(List<EventSwitchEnter> EventSwitchEnterList){
 		this.EventSwitchEnterList = EventSwitchEnterList;
+	}
+	
+	public void SetMainDatapath(List<EventMainDatapath> EventMainDatapathList){
+		this.EventMainDatapathList = EventMainDatapathList;
 	}
 	
 }

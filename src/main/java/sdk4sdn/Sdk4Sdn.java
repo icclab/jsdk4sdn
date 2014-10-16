@@ -40,6 +40,7 @@ import ro.fortsoft.pf4j.DefaultPluginManager;
 import ro.fortsoft.pf4j.PluginManager;
 
 import sdk4sdn.lib.EventLinkEnter;
+import sdk4sdn.lib.EventMainDatapath;
 import sdk4sdn.lib.EventSwitchEnter;
 import sdk4sdn.openflow13.OFPEventSwitchFeatures;
 import sdk4sdn.openflow13.OFPEventPacketIn;
@@ -70,6 +71,7 @@ public class Sdk4Sdn {
 		setExtensions(ControllerConnection, pluginManager.getExtensions(OFPEventSwitchFeatures.class), "OFPEventSwitchFeatures");
 		setExtensions(ControllerConnection, pluginManager.getExtensions(EventLinkEnter.class), "EventLinkEnter");
 		setExtensions(ControllerConnection, pluginManager.getExtensions(EventSwitchEnter.class), "EventSwitchEnter");
+		setExtensions(ControllerConnection, pluginManager.getExtensions(EventMainDatapath.class), "EventMainDatapath");
 		
 		// Start the subscriber and connect
 		//FIXME: Do something here, this gonna be big
@@ -109,6 +111,9 @@ public class Sdk4Sdn {
 				break;
 			case "EventSwitchEnter":
 				ControllerConnection.SetSwitchEnterSubscribers(CleanExtensionList);
+				break;
+			case "EventMainDatapath":
+				ControllerConnection.SetMainDatapath(CleanExtensionList);
 				break;
 		}
 	}

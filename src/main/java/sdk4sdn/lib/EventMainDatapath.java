@@ -35,11 +35,12 @@ package sdk4sdn.lib;
 
 import ro.fortsoft.pf4j.ExtensionPoint;
 import sdk4sdn.Network;
+import sdk4sdn.openflow13.OpenFlow;
 
 /**
  *
  * @author aepp
  */
 public interface EventMainDatapath extends ExtensionPoint {
-	public void packetInMainDatapath(Network network);
+	public void packetInMainDatapath(Network network, OneSwitch mainDP, OpenFlow OFPMessage, String in_port);
 }

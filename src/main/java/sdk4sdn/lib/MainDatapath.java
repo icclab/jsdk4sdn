@@ -33,10 +33,23 @@
 
 package sdk4sdn.lib;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  *
  * @author aepp
  */
 public class MainDatapath {
+	List<Ports> vPorts = new ArrayList<>();
 	
+	public void addPort(Ports newPort){
+		if(!vPorts.contains(newPort)) {
+			vPorts.add(newPort);
+		}
+	}
+	
+	public void deletePort(Ports delPort){
+		vPorts.remove(delPort);
+	}
 }
