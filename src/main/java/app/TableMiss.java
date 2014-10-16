@@ -43,7 +43,7 @@ import sdk4sdn.openflow13.*;
  * @author aepp
  */
 @Extension
-public class TableMiss implements OFPEventSwitchFeatures{
+public class TableMiss implements OFPEventSwitchFeatures {
 
 	@Override
 	public void switchFeatures(OpenFlow OFPMessage, Network network) {
@@ -72,5 +72,4 @@ public class TableMiss implements OFPEventSwitchFeatures{
 		message.setOFPFlowMod(flowMod);
 		network.Send(message);
 	}
-	
 }

@@ -36,6 +36,7 @@ package sdk4sdn;
 import sdk4sdn.openflow13.OFPEventPacketIn;
 import com.google.gson.Gson;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.List;
 import org.zeromq.ZMQ;
 import org.slf4j.Logger;
@@ -61,6 +62,8 @@ public class Network {
 	String PubDescriptor;
 	
 	String SubDescriptor;
+	
+	List AllExtensions = new ArrayList();
 	
 	List<OFPEventPacketIn> OFPEventPacketIns;
 	
@@ -168,10 +171,9 @@ public class Network {
 					log.info("Event not implemented");
 				}
 			}
-			
 		}
 	}
-	
+
 	public void Send(OpenFlow OFPMessage) {
 		String response = "";
 		Gson gson = new Gson();

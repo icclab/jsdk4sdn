@@ -33,6 +33,7 @@
 
 package sdk4sdn;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import ro.fortsoft.pf4j.DefaultPluginManager;
@@ -62,28 +63,58 @@ public class Sdk4Sdn {
 		
 		//Show a list of all subscribed plugins to the events
 		//FIXME: Remove this or extend it!!
-		List<OFPEventPacketIn> events = pluginManager.getExtensions(OFPEventPacketIn.class);
-        System.out.println(String.format("Found %d subscription for OFPEventPacketIn point '%s'", events.size(), OFPEventPacketIn.class.getName()));
+		/*List<OFPEventPacketIn> events = pluginManager.getExtensions(OFPEventPacketIn.class);
+        System.out.println(String.format("Found %d subscription for OFPEventPacketIn point '%s'", events.size(), OFPEventPacketIn.class.getName()));*/
 		
 		//Get all Extensions for a Extension Point
 		//FIXME: Move this code in a OFPExtensionLoader
-		List<OFPEventPacketIn> OFPEventPacketIns = pluginManager.getExtensions(OFPEventPacketIn.class);
-		List<OFPEventSwitchFeatures> OFPEventSwitchFeaturesList = pluginManager.getExtensions(OFPEventSwitchFeatures.class);
-		List<EventLinkEnter> EventLinkEnterList = pluginManager.getExtensions(EventLinkEnter.class);
-		List<EventSwitchEnter> EventSwitchEnterList = pluginManager.getExtensions(EventSwitchEnter.class);
+		Network ControllerConnection = new Network("sdk4sdn", "controller");
+		
+		setExtensions(ControllerConnection, pluginManager.getExtensions(OFPEventPacketIn.class), "OFPEventPacketIn");
+		setExtensions(ControllerConnection, pluginManager.getExtensions(OFPEventSwitchFeatures.class), "OFPEventSwitchFeatures");
+		setExtensions(ControllerConnection, pluginManager.getExtensions(EventLinkEnter.class), "EventLinkEnter");
+		setExtensions(ControllerConnection, pluginManager.getExtensions(EventSwitchEnter.class), "EventSwitchEnter");
 		
 		// Create a brand new controller<->sdk4sdn connection
 		// Start the subscriber and connect
 		//FIXME: Do something here, this gonna be big
 		//FIXME: Make the endpoints "sdk4sdn" and "controller" as variable
-		Network ControllerConnection = new Network("sdk4sdn", "controller");
-		ControllerConnection.SetPacketInSubscribers(OFPEventPacketIns);
-		ControllerConnection.SetSwitchFeaturesSubscribers(OFPEventSwitchFeaturesList);
-		ControllerConnection.SetLinkEnterSubscribers(EventLinkEnterList);
-		ControllerConnection.SetSwitchEnterSubscribers(EventSwitchEnterList);
 		ControllerConnection.CreateSubscriber();
 		ControllerConnection.CreatePublisher();
 		ControllerConnection.Connect();
 	}
 	
+	public static void setExtensions(Network ControllerConnection, List Extensions, String type){
+		boolean extExists = false;
+		List CleanExtensionList = new ArrayList();
+		//Loop through the newly extension list
+		for (Object extension : Extensions) {
+			//Loop through the existing extensions
+			for(Object existingExtension : ControllerConnection.AllExtensions) {
+				//Check if we already have an instance
+				if(extension.getClass().getName().equals(existingExtension.getClass().getName())) {
+					CleanExtensionList.add(existingExtension);
+					extExists = true;
+				}
+			}
+			if(!extExists) {
+				ControllerConnection.AllExtensions.add(extension);
+				CleanExtensionList.add(extension);
+			}
+		}
+		switch(type){
+			case "OFPEventPacketIn":
+				ControllerConnection.SetPacketInSubscribers(CleanExtensionList);
+				break;
+			case "OFPEventSwitchFeatures":
+				ControllerConnection.SetSwitchFeaturesSubscribers(CleanExtensionList);
+				break;
+			case "EventLinkEnter":
+				ControllerConnection.SetLinkEnterSubscribers(CleanExtensionList);
+				break;
+			case "EventSwitchEnter":
+				ControllerConnection.SetSwitchEnterSubscribers(CleanExtensionList);
+				break;
+		}
+	}
 }

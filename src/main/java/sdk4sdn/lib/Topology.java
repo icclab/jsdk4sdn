@@ -5,7 +5,7 @@ import java.util.List;
 
 public class Topology{
    	private String dpid;
-   	private List ports;
+   	private List <Ports> ports;
    	private Dst dst;
    	private Src src;
 
@@ -15,10 +15,10 @@ public class Topology{
 	public void setDpid(String dpid){
 		this.dpid = dpid;
 	}
- 	public List getPorts(){
+ 	public List <Ports> getPorts(){
 		return this.ports;
 	}
-	public void setPorts(List ports){
+	public void setPorts(List <Ports> ports){
 		this.ports = ports;
 	}
  	public Dst getDst(){

@@ -33,6 +33,10 @@
 
 package sdk4sdn.lib;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import ro.fortsoft.pf4j.Extension;
 import sdk4sdn.Network;
 import sdk4sdn.openflow13.OFPEventPacketIn;
@@ -43,16 +47,84 @@ import sdk4sdn.openflow13.OpenFlow;
  * @author aepp
  */
 @Extension
-public class OneSwitch implements OFPEventPacketIn, EventSwitchEnter {
+public class OneSwitch implements OFPEventPacketIn, EventSwitchEnter, EventLinkEnter {
+	
+	public HashMap<String, List> PortLinks = new HashMap<>();
+	
+	public HashMap<String, List> PortSwitches = new HashMap<>();
+	
+	public HashMap<String, List> ports = new HashMap<>();
+	
+	public HashMap<String, String> mainDatapath = new HashMap<>();
+	
+	public OneSwitch(){
+		System.out.println("New object");
+	}
 
 	@Override
 	public void packetIn(OpenFlow OFPMessage, Network network) {
-		
+		System.out.print("The main datapath");
+		for (Map.Entry<String, String> entry : this.mainDatapath.entrySet()) {
+			System.out.print("{" + entry.getKey() + " " + entry.getValue() + "}");
+		}
+		System.out.println("");
 	}
 
 	@Override
 	public void switchEnter(Topology topology, Network network) {
-		System.out.println("New Switch entered the game " + topology.getDpid());
+		//DANGER ZONE, a switch has at max 48 ports
+		List<String> tmpPorts = new ArrayList<>();
+		for(Ports port : topology.getPorts()){
+			tmpPorts.add(port.getPort_no());
+		}
+		this.PortSwitches.put(topology.getDpid(), tmpPorts);
+		if(this.PortSwitches.size() == 5){
+			boolean test = true;
+		}
+		this.updateMainDatapath();
 	}
 	
+	@Override
+	public void linkEnter(Topology topology, Network network) {
+		List<String> tmpPorts = new ArrayList<>();
+		if(this.PortLinks.get(topology.getDst().getDpid()) != null) {
+			this.PortLinks.get(topology.getDst().getDpid()).add(topology.getDst().getPort_no());
+		}
+		else {
+			tmpPorts.add(topology.getDst().getPort_no());
+			this.PortLinks.put(topology.getDst().getDpid(), tmpPorts);
+		}
+		
+		tmpPorts = new ArrayList<>();
+		if(this.PortLinks.get(topology.getSrc().getDpid()) != null) {
+			this.PortLinks.get(topology.getSrc().getDpid()).add(topology.getSrc().getPort_no());
+		}
+		else {
+			tmpPorts.add(topology.getSrc().getPort_no());
+			this.PortLinks.put(topology.getSrc().getDpid(), tmpPorts);
+		}
+		this.updateMainDatapath();
+	}
+	
+	public void updateMainDatapath(){
+		for (Map.Entry<String, List> entry : this.PortSwitches.entrySet()) {
+			//Check if there are links available to remove them
+			//A device with no link does simply not exist
+			String dpid = entry.getKey();
+			if(this.PortLinks.get(dpid) == null) {
+				continue;
+			}
+			List<String> portsToRemove = this.PortLinks.get(dpid);
+			List<String> portsAvailable = entry.getValue();
+			portsAvailable.removeAll(portsToRemove);
+			//Add all ports from the available ports list
+			for (String port : portsAvailable) {
+				this.mainDatapath.put(dpid + "." + port, port);
+			}
+			//Remove ports from mainDatapath
+			for (String port : portsToRemove) {
+				this.mainDatapath.remove(dpid + "." + port);
+			}
+		}
+	}
 }
