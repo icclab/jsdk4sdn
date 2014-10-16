@@ -37,6 +37,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.jgrapht.*;
+import org.jgrapht.graph.*;
 import ro.fortsoft.pf4j.Extension;
 import sdk4sdn.Network;
 import sdk4sdn.openflow13.OFPEventPacketIn;
@@ -57,7 +59,12 @@ public class OneSwitch implements OFPEventPacketIn, EventSwitchEnter, EventLinkE
 	
 	public HashMap<String, String> mainDatapath = new HashMap<>();
 	
+	public DirectedGraph<String, DefaultEdge> directedGraph;
+	
+	public List<Topology> allLinks = new ArrayList<>();
+	
 	public OneSwitch(){
+		this.directedGraph = new DefaultDirectedGraph<>(DefaultEdge.class);
 		System.out.println("New object");
 	}
 
@@ -78,14 +85,14 @@ public class OneSwitch implements OFPEventPacketIn, EventSwitchEnter, EventLinkE
 			tmpPorts.add(port.getPort_no());
 		}
 		this.PortSwitches.put(topology.getDpid(), tmpPorts);
-		if(this.PortSwitches.size() == 5){
-			boolean test = true;
-		}
 		this.updateMainDatapath();
 	}
 	
 	@Override
 	public void linkEnter(Topology topology, Network network) {
+		if(!this.allLinks.contains(topology)){
+			this.allLinks.add(topology);
+		}
 		List<String> tmpPorts = new ArrayList<>();
 		if(this.PortLinks.get(topology.getDst().getDpid()) != null) {
 			this.PortLinks.get(topology.getDst().getDpid()).add(topology.getDst().getPort_no());
@@ -104,9 +111,11 @@ public class OneSwitch implements OFPEventPacketIn, EventSwitchEnter, EventLinkE
 			this.PortLinks.put(topology.getSrc().getDpid(), tmpPorts);
 		}
 		this.updateMainDatapath();
+		this.updateDijkstraGraph();
 	}
 	
 	public void updateMainDatapath(){
+		//build the main datapath
 		for (Map.Entry<String, List> entry : this.PortSwitches.entrySet()) {
 			//Check if there are links available to remove them
 			//A device with no link does simply not exist
@@ -125,6 +134,14 @@ public class OneSwitch implements OFPEventPacketIn, EventSwitchEnter, EventLinkE
 			for (String port : portsToRemove) {
 				this.mainDatapath.remove(dpid + "." + port);
 			}
+		}
+	}
+	
+	public void updateDijkstraGraph(){
+		//build the dijkstra graph
+		for (Topology link : this.allLinks) {
+			this.directedGraph.addVertex(link.getSrc().getDpid());
+			this.directedGraph.addEdge(link.getSrc().getDpid(), link.getDst().getDpid());
 		}
 	}
 }
