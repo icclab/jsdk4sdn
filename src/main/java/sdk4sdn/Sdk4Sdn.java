@@ -63,10 +63,12 @@ public class Sdk4Sdn {
 		pluginManager.startPlugins();
 		
 		// Create a brand new controller<->sdk4sdn connection
+		//FIXME: Make the endpoints "sdk4sdn" and "controller" as variable
 		Network ControllerConnection = new Network("sdk4sdn", "controller");
 		
 		//Get all Extensions for a Extension Point
-		//FIXME: Move this code in a OFPExtensionLoader
+		//FIXME: Do something here, this gonna be big
+		//FIXME: Move this code in an OFPExtensionLoader
 		setExtensions(ControllerConnection, pluginManager.getExtensions(OFPEventPacketIn.class), "OFPEventPacketIn");
 		setExtensions(ControllerConnection, pluginManager.getExtensions(OFPEventSwitchFeatures.class), "OFPEventSwitchFeatures");
 		setExtensions(ControllerConnection, pluginManager.getExtensions(EventLinkEnter.class), "EventLinkEnter");
@@ -74,8 +76,6 @@ public class Sdk4Sdn {
 		setExtensions(ControllerConnection, pluginManager.getExtensions(EventMainDatapath.class), "EventMainDatapath");
 		
 		// Start the subscriber and connect
-		//FIXME: Do something here, this gonna be big
-		//FIXME: Make the endpoints "sdk4sdn" and "controller" as variable
 		ControllerConnection.CreateSubscriber();
 		ControllerConnection.CreatePublisher();
 		ControllerConnection.Connect();

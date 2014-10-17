@@ -59,7 +59,7 @@ public class SimpleArp implements OFPEventSwitchFeatures, OFPEventPacketIn {
 	/**
 	 * This is the broadcast store
 	 */
-	public HashMap<Number, HashMap<String, String>> broadcastStore = new HashMap<Number, HashMap<String, String>>();
+	public HashMap<Number, HashMap<String, String>> broadcastStore = new HashMap<>();
 
 	@Override
 	public void switchFeatures(OpenFlow OFPMessage, Network network) {
@@ -127,10 +127,13 @@ public class SimpleArp implements OFPEventSwitchFeatures, OFPEventPacketIn {
 				in_port = field.getOXMTlv().getValue();
 			}
 		}
+		//At the moment, we do not handle this
 		if("01:80:c2:00:00:0e".equals(eth_dst))
 			return;
+		//At the moment, we do not handle this
 		if("33:33".equals(eth_dst.substring(0, 5)))
 			return;
+		//Well this for sure
 		if("ff:ff:ff:ff:ff:ff".equals(eth_dst)){
 			Number dpid = OFPMessage.getOFPPacketIn().getDatapath_id();
 			if(null == this.broadcastStore.get(dpid)) {

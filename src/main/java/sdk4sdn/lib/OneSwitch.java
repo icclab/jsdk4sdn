@@ -39,13 +39,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import org.jgrapht.*;
+import org.jgrapht.alg.DijkstraShortestPath;
 import org.jgrapht.graph.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ro.fortsoft.pf4j.Extension;
 import sdk4sdn.Network;
+import sdk4sdn.openflow13.OFPActionOutput;
 import sdk4sdn.openflow13.OFPEventPacketIn;
+import sdk4sdn.openflow13.OFPFlowMod;
 import sdk4sdn.openflow13.OFPMessageFactory;
 import sdk4sdn.openflow13.OFPPacketOut;
+import sdk4sdn.openflow13.OXMTlv;
 import sdk4sdn.openflow13.OpenFlow;
+import sdk4sdn.openflow13.actions;
 import sdk4sdn.openflow13.oxm_fields;
 
 /**
@@ -68,6 +75,8 @@ public class OneSwitch implements OFPEventPacketIn, EventSwitchEnter, EventLinkE
 	public List<Topology> allLinks = new ArrayList<>();
 	
 	public MainDatapath datapath = new MainDatapath();
+	
+	private static final Logger log = LoggerFactory.getLogger(Network.class);
 	
 	public OneSwitch(){
 		this.directedGraph = new DefaultDirectedGraph<>(DefaultEdge.class);
@@ -105,7 +114,6 @@ public class OneSwitch implements OFPEventPacketIn, EventSwitchEnter, EventLinkE
 
 	@Override
 	public void switchEnter(Topology topology, Network network) {
-		//DANGER ZONE, a switch has at max 48 ports
 		List<String> tmpPorts = new ArrayList<>();
 		for(Ports port : topology.getPorts()){
 			tmpPorts.add(port.getPort_no());
@@ -185,16 +193,271 @@ public class OneSwitch implements OFPEventPacketIn, EventSwitchEnter, EventLinkE
 	public void floodFromSelf(Network network, OpenFlow OFPMessage, String in_port){
 		for (Map.Entry<String, String> entry : this.mainDatapath.entrySet()) {
 			String identifier = entry.getKey();
-			System.out.println("Send packet out on dpid: " + identifier);
 			if(identifier.equals(in_port))
 				continue;
 			String[] parts = identifier.split(Pattern.quote("."));
-			
 			OpenFlow message = new OpenFlow();
 			OFPPacketOut packetOut = OFPMessageFactory.CreatePacketOut(parts[1], OFPMessage);
 			packetOut.setDatapath_id(Integer.parseInt(parts[0]));
 			message.setOFPPacketOut(packetOut);
 			network.Send(message);
 		}
+	}
+	
+	//FIXME: This methode is a mess!
+	public void addRouteFromSelf(Network network, ArrayList<oxm_fields> matchFields, OFPActionOutput packetOut){
+		OpenFlow message;
+		actions actions;
+		ArrayList<oxm_fields> fieldsList;
+		oxm_fields fields;
+		OXMTlv fieldEthDst = new OXMTlv();
+		OXMTlv fieldEthSrc = new OXMTlv();
+		OXMTlv fieldPort = new OXMTlv();
+		oxm_fields oPortFields;
+		oxm_fields oEthDstFields;
+		oxm_fields oEthSrcFields;
+		Topology physLink;
+		String out_port = "";
+		
+		try {
+			out_port = packetOut.getOut_port();
+		}
+		catch(Exception e) {
+			log.error("no out_port specified " + e.getMessage(), e);
+			return;
+		}
+		String in_port = "";
+		
+		int i = 0;
+		
+		for(oxm_fields match : matchFields){
+			if("in_port".equals(match.getOXMTlv().getField())){
+				in_port = match.getOXMTlv().getValue();
+				fieldPort = match.getOXMTlv();
+			}
+			if("eth_dst".equals(match.getOXMTlv().getField())){
+				fieldEthDst = match.getOXMTlv();
+			}
+			if("eth_src".equals(match.getOXMTlv().getField())){
+				fieldEthSrc = match.getOXMTlv();
+			}
+		}
+		//FIXME: Add proper error stuff here
+		if("".equals(in_port) || "".equals(out_port)) {
+			log.error("no in_port or out_port found");
+			return;
+		}
+		List path;
+		try {
+			path = DijkstraShortestPath.findPathBetween(this.directedGraph, in_port.split(Pattern.quote("."))[0], out_port.split(Pattern.quote("."))[0]);
+		}
+		catch(Exception e) {
+			log.error("could not calculate path " + e.getMessage(), e);
+			return;
+		}
+		i = 0;
+		if(path.size() >= 2) {
+			for(Object link : path){
+				if(i == 0) {
+					//First device where the traffic is comming from
+					message = new OpenFlow();
+					fieldsList = new ArrayList<>();
+					oPortFields = new oxm_fields();
+					oEthDstFields = new oxm_fields();
+					oEthSrcFields = new oxm_fields();
+					actions = new actions();
+					
+					String srcDP = this.directedGraph.getEdgeSource((DefaultEdge)link);
+					String dstDP = this.directedGraph.getEdgeTarget((DefaultEdge)link);
+					physLink = getPhysLink(srcDP, dstDP);
+					
+					fieldPort.setValue(in_port.split(Pattern.quote("."))[1]);
+					
+					oPortFields.setOXMTlv(fieldPort);
+					fieldsList.add(oPortFields);
+					oEthDstFields.setOXMTlv(fieldEthDst);
+					fieldsList.add(oEthDstFields);
+					oEthSrcFields.setOXMTlv(fieldEthSrc);
+					fieldsList.add(oEthSrcFields);
+					
+					OFPActionOutput action = OFPMessageFactory.CreateActionOutput(physLink.getSrc().getPort_no());
+					actions.setOFPActionOutput(action);
+					
+					OFPFlowMod flowMod = OFPMessageFactory.CreateFlowModAction(actions, fieldsList);
+					flowMod.setDatapath_id(Integer.parseInt(srcDP));
+					flowMod.setTable_id(0);
+					flowMod.setPriority(123);
+					message.setOFPFlowMod(flowMod);
+					network.Send(message);
+				}
+				else if(i == (path.size()-1)) {
+					//That's the seconde last device
+					message = new OpenFlow();
+					fieldsList = new ArrayList<>();
+					oEthDstFields = new oxm_fields();
+					oEthSrcFields = new oxm_fields();
+					actions = new actions();
+					
+					String srcDP = this.directedGraph.getEdgeSource((DefaultEdge)link);
+					String dstDP = this.directedGraph.getEdgeTarget((DefaultEdge)link);
+					physLink = getPhysLink(srcDP, dstDP);
+					
+					oEthDstFields.setOXMTlv(fieldEthDst);
+					fieldsList.add(oEthDstFields);
+					oEthSrcFields.setOXMTlv(fieldEthSrc);
+					fieldsList.add(oEthSrcFields);
+					
+					OFPActionOutput action = OFPMessageFactory.CreateActionOutput(physLink.getSrc().getPort_no());
+					actions.setOFPActionOutput(action);
+					
+					OFPFlowMod flowMod = OFPMessageFactory.CreateFlowModAction(actions, fieldsList);
+					flowMod.setDatapath_id(Integer.parseInt(srcDP));
+					flowMod.setTable_id(0);
+					flowMod.setPriority(123);
+					message.setOFPFlowMod(flowMod);
+					network.Send(message);
+					
+					message = new OpenFlow();
+					fieldsList = new ArrayList<>();
+					oEthDstFields = new oxm_fields();
+					oEthSrcFields = new oxm_fields();
+					actions = new actions();
+					
+					oEthDstFields.setOXMTlv(fieldEthDst);
+					fieldsList.add(oEthDstFields);
+					oEthSrcFields.setOXMTlv(fieldEthSrc);
+					fieldsList.add(oEthSrcFields);
+					
+					action = OFPMessageFactory.CreateActionOutput(out_port.split(Pattern.quote("."))[1]);
+					actions.setOFPActionOutput(action);
+					
+					flowMod = OFPMessageFactory.CreateFlowModAction(actions, fieldsList);
+					flowMod.setDatapath_id(Integer.parseInt(out_port.split(Pattern.quote("."))[0]));
+					flowMod.setTable_id(0);
+					flowMod.setPriority(123);
+					message.setOFPFlowMod(flowMod);
+					network.Send(message);
+				}
+				else if(i>0){
+					message = new OpenFlow();
+					fieldsList = new ArrayList<>();
+					oEthDstFields = new oxm_fields();
+					oEthSrcFields = new oxm_fields();
+					actions = new actions();
+					
+					String srcDP = this.directedGraph.getEdgeSource((DefaultEdge)link);
+					String dstDP = this.directedGraph.getEdgeTarget((DefaultEdge)link);
+					physLink = getPhysLink(srcDP, dstDP);
+					
+					oEthDstFields.setOXMTlv(fieldEthDst);
+					fieldsList.add(oEthDstFields);
+					oEthSrcFields.setOXMTlv(fieldEthSrc);
+					fieldsList.add(oEthSrcFields);
+					
+					OFPActionOutput action = OFPMessageFactory.CreateActionOutput(physLink.getSrc().getPort_no());
+					actions.setOFPActionOutput(action);
+					
+					OFPFlowMod flowMod = OFPMessageFactory.CreateFlowModAction(actions, fieldsList);
+					flowMod.setDatapath_id(Integer.parseInt(srcDP));
+					flowMod.setTable_id(0);
+					flowMod.setPriority(123);
+					message.setOFPFlowMod(flowMod);
+					network.Send(message);					
+				}
+				i++;
+			}
+		}
+		else if(path.size() == 1) {
+			for(Object link : path){
+					//That's the seconde last device
+					message = new OpenFlow();
+					fieldsList = new ArrayList<>();
+					oEthDstFields = new oxm_fields();
+					oEthSrcFields = new oxm_fields();
+					oPortFields = new oxm_fields();
+					actions = new actions();
+					
+					String srcDP = this.directedGraph.getEdgeSource((DefaultEdge)link);
+					String dstDP = this.directedGraph.getEdgeTarget((DefaultEdge)link);
+					physLink = getPhysLink(srcDP, dstDP);
+					
+					fieldPort.setValue(in_port.split(Pattern.quote("."))[1]);
+					
+					oPortFields.setOXMTlv(fieldPort);
+					fieldsList.add(oPortFields);
+					oEthDstFields.setOXMTlv(fieldEthDst);
+					fieldsList.add(oEthDstFields);
+					oEthSrcFields.setOXMTlv(fieldEthSrc);
+					fieldsList.add(oEthSrcFields);
+					
+					OFPActionOutput action = OFPMessageFactory.CreateActionOutput(physLink.getSrc().getPort_no());
+					actions.setOFPActionOutput(action);
+					
+					OFPFlowMod flowMod = OFPMessageFactory.CreateFlowModAction(actions, fieldsList);
+					flowMod.setDatapath_id(Integer.parseInt(srcDP));
+					flowMod.setTable_id(0);
+					flowMod.setPriority(123);
+					message.setOFPFlowMod(flowMod);
+					network.Send(message);
+					
+					message = new OpenFlow();
+					fieldsList = new ArrayList<>();
+					oEthDstFields = new oxm_fields();
+					oEthSrcFields = new oxm_fields();
+					actions = new actions();
+					
+					oEthDstFields.setOXMTlv(fieldEthDst);
+					fieldsList.add(oEthDstFields);
+					oEthSrcFields.setOXMTlv(fieldEthSrc);
+					fieldsList.add(oEthSrcFields);
+					
+					action = OFPMessageFactory.CreateActionOutput(out_port.split(Pattern.quote("."))[1]);
+					actions.setOFPActionOutput(action);
+					
+					flowMod = OFPMessageFactory.CreateFlowModAction(actions, fieldsList);
+					flowMod.setDatapath_id(Integer.parseInt(out_port.split(Pattern.quote("."))[0]));
+					flowMod.setTable_id(0);
+					flowMod.setPriority(123);
+					message.setOFPFlowMod(flowMod);
+					network.Send(message);				
+			}
+		}
+		else if(path.size() == 0) {
+			message = new OpenFlow();
+			fieldsList = new ArrayList<>();
+			oEthDstFields = new oxm_fields();
+			oEthSrcFields = new oxm_fields();
+			oPortFields = new oxm_fields();
+			actions = new actions();
+			
+			fieldPort.setValue(in_port.split(Pattern.quote("."))[1]);
+					
+			oPortFields.setOXMTlv(fieldPort);
+			fieldsList.add(oPortFields);
+			oEthDstFields.setOXMTlv(fieldEthDst);
+			fieldsList.add(oEthDstFields);
+			oEthSrcFields.setOXMTlv(fieldEthSrc);
+			fieldsList.add(oEthSrcFields);
+				
+			OFPActionOutput action = OFPMessageFactory.CreateActionOutput(out_port.split(Pattern.quote("."))[1]);
+			actions.setOFPActionOutput(action);
+			
+			OFPFlowMod flowMod = OFPMessageFactory.CreateFlowModAction(actions, fieldsList);
+			flowMod.setDatapath_id(Integer.parseInt(out_port.split(Pattern.quote("."))[0]));
+			flowMod.setTable_id(0);
+			flowMod.setPriority(123);
+			message.setOFPFlowMod(flowMod);
+			network.Send(message);				
+		}
+        System.out.println(path + "\n");
+	}
+	
+	public Topology getPhysLink(String srcDP, String dstDP){
+		for (Topology link : this.allLinks) {
+			if(link.getSrc().getDpid().equals(srcDP) && link.getDst().getDpid().equals(dstDP)) {
+				return link;
+			}
+		}
+		return null;
 	}
 }
