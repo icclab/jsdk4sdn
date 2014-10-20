@@ -71,7 +71,6 @@ public class L2Switch implements OFPEventPacketIn, OFPEventSwitchFeatures {
 			if ("eth_dst".equals(field.getOXMTlv().getField())) {
 				//only for debug reason
 				if ("ff:ff:ff:ff:ff:ff".equals(eth_dst)) {
-					System.out.println("Broadcast, stopping here");
 					return;
 				}
 				eth_dst = field.getOXMTlv().getValue();

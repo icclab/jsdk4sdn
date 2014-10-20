@@ -96,18 +96,19 @@ public class Sdk4Sdn {
 	}
 	
 	public static void setExtensions(Network ControllerConnection, List Extensions, String type, String pluginPath) throws IOException {
-		boolean extExists = false;
+		
 		List CleanExtensionList = new ArrayList();
 		prop.load(new FileInputStream(pluginPath+"disabled.txt"));
 		//Loop through the newly extension list
 		for (Object extension : Extensions) {
+			boolean extExists = false;
 			//Loop through the existing extensions
 			for(Object existingExtension : ControllerConnection.AllExtensions) {
 				//Check if we already have an instance
 				if(extension.getClass().getName().equals(existingExtension.getClass().getName())) {
+					extExists = true;
 					if(!prop.containsKey(extension.getClass().getName().substring(extension.getClass().getName().lastIndexOf('.') + 1))) {
 						CleanExtensionList.add(existingExtension);
-						extExists = true;
 					}
 				}
 			}
