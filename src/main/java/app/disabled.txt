@@ -1,0 +1,5 @@
+##############################
+# Disable Plugins by Classname
+# one Classname per line
+##############################
+L2Switch
