@@ -39,7 +39,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
-import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,10 +58,11 @@ public class Sdk4Sdn {
 	
 	private static final Properties prop = new Properties();
 	
-	private static final Logger log = LoggerFactory.getLogger(Network.class);
+	private static final Logger log = LoggerFactory.getLogger(Sdk4Sdn.class);
 
 	/**
 	 * @param args the command line arguments
+	 * @throws java.io.IOException
 	 */
 	public static void main(String[] args) throws IOException {
 		printWelcome();
@@ -119,7 +119,7 @@ public class Sdk4Sdn {
 				}
 			}
 		}
-		switch(type){
+		switch(type) {
 			case "OFPEventPacketIn":
 				ControllerConnection.SetPacketInSubscribers(CleanExtensionList);
 				break;
@@ -138,14 +138,11 @@ public class Sdk4Sdn {
 		}
 	}
 	
-	public static void printWelcome(){
+	public static void printWelcome() {
 		log.info("\n   _____ ____  __ ____ __ _____ ____  _   __\n"
 				+ "  / ___// __ \\/ //_/ // // ___// __ \\/ | / /\n"
 				+ "  \\__ \\/ / / / ,< / // /_\\__ \\/ / / /  |/ /\n"
 				+ " ___/ / /_/ / /| /__  __/__/ / /_/ / /|  /\n"
-				+ "/____/_____/_/ |_| /_/ /____/_____/_/ |_/\n"
-				+ "\n"
-				+ "I got 99 problems but my network ain't one\n"
-				+ "\n");
+				+ "/____/_____/_/ |_| /_/ /____/_____/_/ |_/\n");
 	}
 } 

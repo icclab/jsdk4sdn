@@ -55,7 +55,7 @@ public class L2Domain implements EventMainDatapath {
 	HashMap<String, String> ethDstMap = new HashMap<>();
 
 	@Override
-	public void packetInMainDatapath(Network network, OneSwitch mainDP, OpenFlow OFPMessage, String vPort) {
+	public void packetInMainDatapath(Network network, OneSwitch mainDP, OpenFlow OFPMessage, String vPortIn) {
 		/**
 		 * The vPort is the in_port of the mainDP, but we can also get the
 		 * real in_port from the OFPMessage object. ETH-Addresses are not
@@ -64,8 +64,7 @@ public class L2Domain implements EventMainDatapath {
 		 */
 		String eth_src = "";
 		String eth_dst = "";
-		String in_port = "";
-		String out_port = "";
+		String vPortOut = "";
 		
 		//Get the fields 
 		for ( oxm_fields field : OFPMessage.getOFPPacketIn().getMatch().getOFPMatch().getOxm_fields()) {
@@ -75,14 +74,10 @@ public class L2Domain implements EventMainDatapath {
 			if("eth_dst".equals(field.getOXMTlv().getField())) {
 				eth_dst = field.getOXMTlv().getValue();
 			}
-			if("in_port".equals(field.getOXMTlv().getField())) {
-				//Don't forget, that this is the physical one
-				in_port = field.getOXMTlv().getValue();
-			}
 		}
 		
 		//Learn the MAC <-> PORT
-		this.ethDstMap.put(eth_src, vPort);
+		this.ethDstMap.put(eth_src, vPortIn);
 		
 		//Check if we already know the MAC <-> PORT
 		if(this.ethDstMap.get(eth_dst) != null) {
@@ -101,20 +96,20 @@ public class L2Domain implements EventMainDatapath {
 			fields.setOXMTlv(fieldEthSrc);
 			fieldsList.add(fields);
 			
-			out_port = this.ethDstMap.get(eth_dst);
+			vPortOut = this.ethDstMap.get(eth_dst);
 			
 			fields = new oxm_fields();
 			OXMTlv fieldOutPort = new OXMTlv();
 			fieldOutPort.setField("in_port");
-			fieldOutPort.setValue(vPort);
+			fieldOutPort.setValue(vPortIn);
 			fields.setOXMTlv(fieldOutPort);
 			fieldsList.add(fields);
 			
-			OFPActionOutput packetOut = OFPMessageFactory.CreateActionOutput(out_port);
+			OFPActionOutput packetOut = OFPMessageFactory.CreateActionOutput(vPortOut);
 			
 			mainDP.addRouteFromSelf(network, fieldsList, packetOut);
 		}
 		//We flood anyways always from self to deliver the packet
-		mainDP.floodFromSelf(network, OFPMessage, vPort);
+		mainDP.floodFromSelf(network, OFPMessage, vPortIn);
 	}
 }
