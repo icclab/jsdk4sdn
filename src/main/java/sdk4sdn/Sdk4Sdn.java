@@ -33,8 +33,15 @@
 
 package sdk4sdn;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
+import java.util.Set;
+import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import ro.fortsoft.pf4j.DefaultPluginManager;
 import ro.fortsoft.pf4j.PluginManager;
@@ -49,18 +56,25 @@ import sdk4sdn.openflow13.OFPEventPacketIn;
  * @author aepp
  */
 public class Sdk4Sdn {
+	
+	private static final Properties prop = new Properties();
+	
+	private static final Logger log = LoggerFactory.getLogger(Network.class);
 
 	/**
 	 * @param args the command line arguments
 	 */
-	public static void main(String[] args) {
-		//The Plugin path, FIXME: I think this is not needed
-		//System.setProperty("pf4j.pluginsDir", "/home/staff/aepp/unix/NetBeansProjects/jsdk4sdn/src/main/java/app");
+	public static void main(String[] args) throws IOException {
+		printWelcome();
+		
+		//FIXME: Make this variable
+		String pluginPath = "/home/staff/aepp/unix/NetBeansProjects/jsdk4sdn/src/main/java/app/";
+		System.setProperty("pf4j.pluginsDir", pluginPath);
 		
 		// Load and start the user SDN applications
 		PluginManager pluginManager = new DefaultPluginManager();
-		pluginManager.loadPlugins();
-		pluginManager.startPlugins();
+		Set<String> plugins = pluginManager.getExtensionClassNames(null);
+		log.info("Available Plugins: "+plugins.toString());
 		
 		// Create a brand new controller<->sdk4sdn connection
 		//FIXME: Make the endpoints "sdk4sdn" and "controller" as variable
@@ -69,11 +83,11 @@ public class Sdk4Sdn {
 		//Get all Extensions for a Extension Point
 		//FIXME: Do something here, this gonna be big
 		//FIXME: Move this code in an OFPExtensionLoader
-		setExtensions(ControllerConnection, pluginManager.getExtensions(OFPEventPacketIn.class), "OFPEventPacketIn");
-		setExtensions(ControllerConnection, pluginManager.getExtensions(OFPEventSwitchFeatures.class), "OFPEventSwitchFeatures");
-		setExtensions(ControllerConnection, pluginManager.getExtensions(EventLinkEnter.class), "EventLinkEnter");
-		setExtensions(ControllerConnection, pluginManager.getExtensions(EventSwitchEnter.class), "EventSwitchEnter");
-		setExtensions(ControllerConnection, pluginManager.getExtensions(EventMainDatapath.class), "EventMainDatapath");
+		setExtensions(ControllerConnection, pluginManager.getExtensions(OFPEventPacketIn.class), "OFPEventPacketIn", pluginPath);
+		setExtensions(ControllerConnection, pluginManager.getExtensions(OFPEventSwitchFeatures.class), "OFPEventSwitchFeatures", pluginPath);
+		setExtensions(ControllerConnection, pluginManager.getExtensions(EventLinkEnter.class), "EventLinkEnter", pluginPath);
+		setExtensions(ControllerConnection, pluginManager.getExtensions(EventSwitchEnter.class), "EventSwitchEnter", pluginPath);
+		setExtensions(ControllerConnection, pluginManager.getExtensions(EventMainDatapath.class), "EventMainDatapath", pluginPath);
 		
 		// Start the subscriber and connect
 		ControllerConnection.CreateSubscriber();
@@ -81,22 +95,28 @@ public class Sdk4Sdn {
 		ControllerConnection.Connect();
 	}
 	
-	public static void setExtensions(Network ControllerConnection, List Extensions, String type){
+	public static void setExtensions(Network ControllerConnection, List Extensions, String type, String pluginPath) throws IOException {
 		boolean extExists = false;
 		List CleanExtensionList = new ArrayList();
+		prop.load(new FileInputStream(pluginPath+"disabled.txt"));
 		//Loop through the newly extension list
 		for (Object extension : Extensions) {
 			//Loop through the existing extensions
 			for(Object existingExtension : ControllerConnection.AllExtensions) {
 				//Check if we already have an instance
 				if(extension.getClass().getName().equals(existingExtension.getClass().getName())) {
-					CleanExtensionList.add(existingExtension);
-					extExists = true;
+					if(!prop.containsKey(extension.getClass().getName().substring(extension.getClass().getName().lastIndexOf('.') + 1))) {
+						CleanExtensionList.add(existingExtension);
+						extExists = true;
+					}
 				}
 			}
 			if(!extExists) {
 				ControllerConnection.AllExtensions.add(extension);
-				CleanExtensionList.add(extension);
+				if(!prop.containsKey(extension.getClass().getName().substring(extension.getClass().getName().lastIndexOf('.') + 1))) {
+					log.info("Enabling Plugin: "+extension.getClass().getName());
+					CleanExtensionList.add(extension);
+				}
 			}
 		}
 		switch(type){
@@ -117,4 +137,15 @@ public class Sdk4Sdn {
 				break;
 		}
 	}
-}
+	
+	public static void printWelcome(){
+		log.info("\n   _____ ____  __ ____ __ _____ ____  _   __\n"
+				+ "  / ___// __ \\/ //_/ // // ___// __ \\/ | / /\n"
+				+ "  \\__ \\/ / / / ,< / // /_\\__ \\/ / / /  |/ /\n"
+				+ " ___/ / /_/ / /| /__  __/__/ / /_/ / /|  /\n"
+				+ "/____/_____/_/ |_| /_/ /____/_____/_/ |_/\n"
+				+ "\n"
+				+ "I got 99 problems but my network ain't one\n"
+				+ "\n");
+	}
+} 

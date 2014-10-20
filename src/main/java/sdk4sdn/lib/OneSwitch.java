@@ -449,7 +449,7 @@ public class OneSwitch implements OFPEventPacketIn, EventSwitchEnter, EventLinkE
 			message.setOFPFlowMod(flowMod);
 			network.Send(message);				
 		}
-        System.out.println(path + "\n");
+        log.info("Adding a route from self via path: "+path);
 	}
 	
 	public Topology getPhysLink(String srcDP, String dstDP){

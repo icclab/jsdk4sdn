@@ -35,6 +35,7 @@ from ryu.controller.handler import MAIN_DISPATCHER, CONFIG_DISPATCHER, set_ev_cl
 from ryu.lib.packet import packet, ethernet
 from ryu.ofproto import ofproto_v1_3
 from ryu.ofproto import ofproto_v1_3_parser
+from ryu.topology import event as topoEvent
 import greenlet
 import eventlet
 # We need the version of zmq that is aware of the eventlet green threads
@@ -60,6 +61,7 @@ class Driver(app_manager.RyuApp):
         self.publisher = self.publisherCtx.socket(zmq.PUB)
         self.publisher.bind("ipc:///tmp/controller.ipc")
         self.publisherTopic = "controller"
+        self.publisherTopoTopic = "topology"
 
         self.subscriberCtx = zmq.Context()
         self.subscriber = self.subscriberCtx.socket(zmq.SUB)
@@ -77,7 +79,6 @@ class Driver(app_manager.RyuApp):
         parser = datapath.ofproto_parser
         msg = ev.msg
         self.dpstore[datapath.id] = {"dp_obj": datapath}
-        print datapath.id
         
         msg_json = simplejson.dumps({
             "OFPSwitchFeatures" : {
@@ -115,6 +116,27 @@ class Driver(app_manager.RyuApp):
                 'msg_len': msg.total_len, 'data': data.encode('hex'),
                 'datapath_id': dpid, 'datapath': self.dpstore[datapath.id].get("dp_json").get("datapath")}}, indent = 3)
         self.publisher.send_multipart([self.publisherTopic, msg_json])
+        
+    @set_ev_cls(topoEvent.EventLinkAdd)
+    def _handle_link_enter(self, ev):
+        link = ev.link.to_dict()
+        link["src"]["port_no"] = int(link["src"]["port_no"])
+        link["src"]["dpid"] = int(link["src"]["dpid"])
+        link["dst"]["port_no"] = int(link["dst"]["port_no"])
+        link["dst"]["dpid"] = int(link["dst"]["dpid"])
+        msg_json = simplejson.dumps(link)
+        self.publisher.send_multipart([self.publisherTopoTopic, msg_json])
+        
+    @set_ev_cls(topoEvent.EventSwitchEnter)
+    def _handle_switch_enter(self, ev):
+        # Update switches on EnterEvent, also update mainDatapath
+        switch = ev.switch.to_dict()
+        for port in switch.get("ports"):
+            port["port_no"] = int(port["port_no"])
+            port["dpid"] = int(port["dpid"])
+        switch["dpid"] = int(switch["dpid"])
+        msg_json = simplejson.dumps(switch)
+        self.publisher.send_multipart([self.publisherTopoTopic, msg_json])
             
     def add_flow(self, datapath, priority, match, actions):
         ofproto = datapath.ofproto
@@ -166,7 +188,7 @@ class Driver(app_manager.RyuApp):
                                             actions)]
         if inst_type == "OFPInstructionGotoTable":
             inst = [goto]
-        if flow_mod.get("table_id"):
+        if int(flow_mod.get("table_id")) >= 0:
             table_id = int(flow_mod.get("table_id"))
 
         mod = ofproto_v1_3_parser.OFPFlowMod(datapath=datapath, priority=int(flow_mod.get("priority")), 
@@ -183,10 +205,10 @@ class Driver(app_manager.RyuApp):
         in_port = int(packet_out.get("in_port"))
         
         data = None
-        if buffer_id == ofproto_v1_3.OFP_NO_BUFFER:
-            data = packet_out.get("data").decode("hex")
+        #if buffer_id == ofproto_v1_3.OFP_NO_BUFFER:
+        data = packet_out.get("data").decode("hex")
         
-        out = ofproto_v1_3_parser.OFPPacketOut(datapath=datapath, buffer_id=buffer_id,
+        out = ofproto_v1_3_parser.OFPPacketOut(datapath=datapath, buffer_id=ofproto_v1_3.OFP_NO_BUFFER,
                                 in_port=in_port, actions=actions, data=data)
         datapath.send_msg(out)
         
@@ -198,7 +220,6 @@ class Driver(app_manager.RyuApp):
                 if out_port == "FLOOD":
                     ret = [ofproto_v1_3_parser.OFPActionOutput(ofproto_v1_3.OFPP_FLOOD, 0)]
                 elif out_port == "OFPP_CONTROLLER":
-                    print "Table miss"
                     ret = [ofproto_v1_3_parser.OFPActionOutput(ofproto_v1_3.OFPP_CONTROLLER, ofproto_v1_3.OFPCML_NO_BUFFER)]
                 else :
                     ret = [ofproto_v1_3_parser.OFPActionOutput(int(out_port))]
@@ -220,10 +241,8 @@ class Driver(app_manager.RyuApp):
                         ret_multiple += str(field_name+"="+field_value+", ")
                     else :
                         ret_multiple += str(field_name+"="+"\""+field_value+"\", ")
-                    #ret = eval("ofproto_v1_3_parser.OFPMatch("+field_name+"="+"\""+field_value+"\""+")")
         if not ret_multiple == "":
             ret_multiple = ret_multiple[:-2]
-            print ret_multiple
             ret = eval("ofproto_v1_3_parser.OFPMatch("+ret_multiple+")")
         return ret
     

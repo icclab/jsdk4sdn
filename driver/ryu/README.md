@@ -25,7 +25,7 @@ Copy the file driver.py from this repository to ryu's application folder and sta
 
 ```bash
 /usr/local/src/ryu
-ryu-manager ryu/app/driver.py
+ryu-manager --observe-links ryu/app/driver.py ryu.topology.switches
 ```
 
 Supported SDK4SDN features
