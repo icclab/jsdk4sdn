@@ -1,5 +1,5 @@
-##############################
-# Disable Plugins by Classname
-# one Classname per line
-##############################
+################################
+# * disable plugins by classname
+# * one classname per line
+################################
 L2Domain
