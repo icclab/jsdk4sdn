@@ -2,4 +2,4 @@
 # * disable plugins by classname
 # * one classname per line
 ################################
-L2Domain
+L2Switch
