@@ -32,7 +32,7 @@
 from ryu.base import app_manager
 from ryu.controller import ofp_event
 from ryu.controller.handler import MAIN_DISPATCHER, CONFIG_DISPATCHER, set_ev_cls
-from ryu.lib.packet import packet, ethernet
+from ryu.lib.packet import packet, ethernet, ipv4, icmp
 from ryu.ofproto import ofproto_v1_3
 from ryu.ofproto import ofproto_v1_3_parser
 from ryu.topology import event as topoEvent
@@ -100,6 +100,9 @@ class Driver(app_manager.RyuApp):
         data = msg.data
         pack = packet.Packet(data)
         eth = pack.get_protocols(ethernet.ethernet)[0]
+        ip_src = ""
+        ip_dst = ""
+        ip = pack.get_protocol(ipv4.ipv4)
 
         dst = eth.dst
         src = eth.src
@@ -112,6 +115,8 @@ class Driver(app_manager.RyuApp):
                         'OFPMatch': {'oxm_fields': [ {'OXMTlv':
                 {'field': "in_port", 'value': msg.match['in_port'] }},
                 {'OXMTlv':{'field': "eth_dst", 'value': dst }},
+                {'OXMTlv':{'field': "ipv4_src", 'value': ip_src }},
+                {'OXMTlv':{'field': "ipv4_dst", 'value': ip_dst }},
                 {'OXMTlv':{'field': "eth_src", 'value': src }},]}},
                 'msg_len': msg.total_len, 'data': data.encode('hex'),
                 'datapath_id': dpid, 'datapath': self.dpstore[datapath.id].get("dp_json").get("datapath")}}, indent = 3)
